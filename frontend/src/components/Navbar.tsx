@@ -1,0 +1,173 @@
+﻿import React, { useState } from 'react';
+import { Play, Pause, RotateCcw, Radio, Bell, ShieldCheck, Activity, LogOut } from 'lucide-react';
+import { api } from '../services/api';
+import { Link } from 'react-router-dom';
+
+interface NavbarProps {
+  wsConnected: boolean;
+  isSimRunning: boolean;
+  isSimPaused: boolean;
+  activeAlertsCount: number;
+  onSimStateChange?: () => void;
+  role?: string;
+  username?: string;
+  onLogout?: () => Promise<void>;
+}
+
+import { useTrafficData } from '../hooks/useTrafficData';
+
+export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
+  const context = useTrafficData();
+  const wsConnected = props.wsConnected !== undefined ? props.wsConnected : context.wsConnected;
+  const isSimRunning = props.isSimRunning !== undefined ? props.isSimRunning : context.isSimRunning;
+  const isSimPaused = props.isSimPaused !== undefined ? props.isSimPaused : context.isSimPaused;
+  const activeAlertsCount = props.activeAlertsCount !== undefined ? props.activeAlertsCount : context.alerts.filter(a => !a.is_resolved).length;
+
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleStart = async () => {
+    try {
+      setLoading('start');
+      await context.startSimulation();
+      props.onSimStateChange?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handlePause = async () => {
+    try {
+      setLoading('pause');
+      await context.pauseSimulation();
+      props.onSimStateChange?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      setLoading('reset');
+      await context.resetSimulation();
+      props.onSimStateChange?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <header className="h-16 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between">
+      {/* Brand & Academic Label */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
+            <Activity className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-sm lg:text-base tracking-tight text-white">
+                TRAFFIC<span className="text-cyan-400">INTEL</span>
+              </span>
+              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/40 font-bold hidden sm:inline-block">
+                ANPR v1.0
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 hidden md:block">
+              Route Tracking & All-Weather Plate Recognition
+            </p>
+          </div>
+        </div>
+
+        {/* DEMO MODE Academic Integrity Badge */}
+        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono">
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+          <span className="font-semibold">SIMULATION DATA IS SEPARATE</span>
+        </div>
+      </div>
+
+      {/* Center/Right: Demo Controls & Status */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Simulation Control Group */}
+        {props.role === 'admin' && <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 gap-1 shadow-inner">
+          <button
+            onClick={handleStart}
+            disabled={loading !== null || (isSimRunning && !isSimPaused)}
+            title="Start Continuous Simulation"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+              isSimRunning && !isSimPaused
+                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 animate-pulse'
+                : 'text-slate-300 hover:text-emerald-400 hover:bg-slate-800'
+            }`}
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span className="hidden sm:inline">START DEMO</span>
+          </button>
+
+          <button
+            onClick={handlePause}
+            disabled={loading !== null || !isSimRunning || isSimPaused}
+            title="Pause Simulation"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+              isSimPaused
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
+                : 'text-slate-300 hover:text-amber-400 hover:bg-slate-800'
+            }`}
+          >
+            <Pause className="w-3.5 h-3.5 fill-current" />
+            <span className="hidden sm:inline">PAUSE</span>
+          </button>
+
+          <button
+            onClick={handleReset}
+            disabled={loading !== null}
+            title="Reset Simulation State"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-all"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">RESET</span>
+          </button>
+        </div>}
+
+        {/* Live WebSocket Status Dot */}
+        <div
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono border ${
+            wsConnected
+              ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-400'
+              : 'bg-rose-950/40 border-rose-800/40 text-rose-400'
+          }`}
+          title={wsConnected ? 'WebSocket Live Stream Active' : 'WebSocket Reconnecting...'}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              wsConnected ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'
+            }`}
+          />
+          <Radio className="w-3 h-3" />
+          <span className="hidden lg:inline">{wsConnected ? 'LIVE FEED' : 'OFFLINE'}</span>
+        </div>
+
+        {/* Alerts Bell Link */}
+        <Link
+          to="/alerts"
+          className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition"
+          title="Active Alerts"
+        >
+          <Bell className="w-4 h-4" />
+          {activeAlertsCount > 0 && (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-[10px] font-mono font-bold text-white shadow-lg animate-bounce">
+              {activeAlertsCount}
+            </span>
+          )}
+        </Link>
+        <span className="hidden md:inline text-[10px] text-slate-500">{props.username} Â· {props.role}</span>
+        <button onClick={() => void props.onLogout?.()} className="rounded border border-slate-800 p-2 text-slate-300 hover:text-white" title="Sign out" aria-label="Sign out"><LogOut size={15}/></button>
+      </div>
+    </header>
+  );
+};

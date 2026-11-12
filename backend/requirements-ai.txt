@@ -1,0 +1,7 @@
+# Optional model/tracking dependencies for REAL media inference.
+# YOLO weights must also exist locally at YOLO_MODEL_PATH.
+ultralytics>=8.2,<9
+paddleocr>=2.7,<3
+paddlepaddle>=2.6,<3
+supervision>=0.25
+trackers

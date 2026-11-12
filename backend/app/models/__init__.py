@@ -1,0 +1,31 @@
+from backend.app.models.models import (
+    Base,
+    User,
+    Camera,
+    Vehicle,
+    VehicleObservation,
+    LicensePlate,
+    PlateDetection,
+    Route,
+    RoutePoint,
+    WeatherCondition,
+    TrafficEvent,
+    Alert,
+    SystemLog,
+)
+
+__all__ = [
+    "Base",
+    "User",
+    "Camera",
+    "Vehicle",
+    "VehicleObservation",
+    "LicensePlate",
+    "PlateDetection",
+    "Route",
+    "RoutePoint",
+    "WeatherCondition",
+    "TrafficEvent",
+    "Alert",
+    "SystemLog",
+]

@@ -1,0 +1,73 @@
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, CheckCircle2, LoaderCircle, UploadCloud } from 'lucide-react';
+import { ProcessingJob } from '../types';
+import { friendlyProcessingStage, getProcessingErrorMessage } from '../utils/mediaProcessing';
+
+interface ProcessingProgressProps {
+  job: ProcessingJob | null;
+  uploading: boolean;
+  uploadProgress: number;
+  error: string | null;
+  onRetry: () => void;
+}
+
+const WORKFLOW_STAGES = [
+  'Uploading', 'Loading media', 'Analyzing quality', 'Enhancing', 'Detecting vehicles',
+  'Tracking', 'Detecting plates', 'Enhancing plates', 'Running OCR', 'Saving results', 'Completed',
+];
+
+export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({ job, uploading, uploadProgress, error, onRetry }) => {
+  const [, setClock] = useState(0);
+  useEffect(() => {
+    if (!uploading && job?.status !== 'queued' && job?.status !== 'processing') return;
+    const timer = window.setInterval(() => setClock((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [uploading, job?.status]);
+
+  const status = uploading ? 'uploading' : job?.status;
+  if (!status && !error) return null;
+  const percent = uploading ? uploadProgress : job?.progress ?? 0;
+  const stage = uploading ? 'Uploading' : friendlyProcessingStage(job?.current_stage);
+  const activeIndex = WORKFLOW_STAGES.findIndex((item) => stage.toLowerCase().includes(item.toLowerCase()));
+  const elapsed = job?.started_at
+    ? Math.max(0, Math.floor(((job.completed_at ? new Date(job.completed_at).getTime() : Date.now()) - new Date(job.started_at).getTime()) / 1000))
+    : null;
+  const rawError = error ?? job?.error_message ?? null;
+  const errorMessage = getProcessingErrorMessage(rawError);
+  const unavailable = (rawError ?? '').toLowerCase().includes('unavailable');
+
+  return (
+    <section aria-live="polite" aria-labelledby="processing-status-heading" className="glass-panel rounded-xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          {status === 'completed' ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : status === 'failed' || error ? <AlertTriangle className="h-5 w-5 text-rose-400" /> : uploading ? <UploadCloud className="h-5 w-5 text-cyan-400" /> : <LoaderCircle className="h-5 w-5 animate-spin text-cyan-400" />}
+          <div>
+            <h3 id="processing-status-heading" className="text-sm font-bold text-white">{unavailable ? 'REAL AI MODEL UNAVAILABLE' : 'Processing status'}</h3>
+            <p className="mt-0.5 text-xs text-slate-400">{status ? `${status.toUpperCase()} · ${stage}` : errorMessage ?? 'Processing service is unavailable'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
+          {elapsed !== null && <span>Elapsed {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}</span>}
+          <span className="font-bold text-cyan-300">{Math.round(percent)}%</span>
+        </div>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800" role="progressbar" aria-valuenow={Math.round(percent)} aria-valuemin={0} aria-valuemax={100} aria-label="Media processing progress">
+        <div className={`h-full transition-all duration-500 ${status === 'failed' || error ? 'bg-rose-500' : status === 'completed' ? 'bg-emerald-400' : 'bg-cyan-400'}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+      </div>
+      <div className="mt-3 hidden grid-cols-2 gap-x-2 gap-y-1 sm:grid sm:grid-cols-4 lg:grid-cols-6">
+        {WORKFLOW_STAGES.map((item, index) => {
+          const complete = status === 'completed' || (activeIndex >= 0 && index < activeIndex);
+          const active = status !== 'failed' && index === activeIndex;
+          return <span key={item} className={`text-[9px] font-mono ${complete ? 'text-emerald-300' : active ? 'text-cyan-300' : 'text-slate-600'}`}>{complete ? '✓ ' : active ? '› ' : '· '}{item}</span>;
+        })}
+      </div>
+      {errorMessage && (
+        <div role="alert" className="mt-3 rounded-lg border border-rose-900/60 bg-rose-950/30 p-3 text-xs text-rose-200">
+          <p className="whitespace-pre-line">{errorMessage}</p>
+          {unavailable && <p className="mt-1 text-rose-300/80">Install the listed real inference dependencies and configure the YOLO weights path, then retry.</p>}
+          <button type="button" onClick={onRetry} className="mt-2 rounded-md border border-rose-800 px-3 py-1.5 font-semibold hover:bg-rose-900/50">Retry processing</button>
+        </div>
+      )}
+    </section>
+  );
+};

@@ -1,0 +1,64 @@
+services:
+  postgresql:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-traffic_intel}
+      POSTGRES_USER: ${POSTGRES_USER:-traffic_intel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the deployment environment}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DEBUG: "False"
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY to a random value of at least 32 characters}
+      DATABASE_URL: ${DATABASE_URL:?Set the PostgreSQL async SQLAlchemy DATABASE_URL}
+      DEMO_MODE: "False"
+      MEDIA_DEMO_MODE: "False"
+      YOLO_MODEL_PATH: /app/models/yolov8n.pt
+      PLATE_MODEL_PATH: /app/models/license_plate_detector.pt
+      PROCESS_EVERY_N_FRAMES: ${PROCESS_EVERY_N_FRAMES:-3}
+      MEDIA_PROCESSING_CONCURRENCY: ${MEDIA_PROCESSING_CONCURRENCY:-1}
+      MAX_PENDING_MEDIA_JOBS: ${MAX_PENDING_MEDIA_JOBS:-20}
+      MAX_LIVE_CAMERA_SESSIONS: ${MAX_LIVE_CAMERA_SESSIONS:-2}
+      LIVE_CAMERA_ALLOWED_RTSP_HOSTS: ${LIVE_CAMERA_ALLOWED_RTSP_HOSTS:-}
+      MEDIA_STORAGE_DIR: /data/media
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS to a JSON array of trusted HTTPS origins}
+    volumes:
+      - ./models:/app/models:ro
+      - media_data:/data/media
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${APP_HTTP_PORT:-8080}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  media_data:
