@@ -47,77 +47,108 @@ export const LiveMonitoring: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <header className="glass-panel rounded-xl border border-[#222634] p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
+      <header className="rounded-2xl bg-[#111C2D] border border-[#26354D] p-6 text-white shadow-md flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Video className="w-5 h-5 text-blue-500" />
-            <span>Live Camera Monitoring</span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#00A8C6] animate-ping" />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-700/50">
+              PHYSICAL SENSOR TELEMETRY · LIVE INFERENCE
+            </span>
+          </div>
+          <h1 className="text-xl lg:text-2xl font-extrabold text-white flex items-center gap-2.5 tracking-tight">
+            <Video className="w-6 h-6 text-[#00A8C6]" />
+            <span>Live Camera Monitoring & Tactical Feeds</span>
           </h1>
-          <p className="mt-1 text-xs text-slate-400">
-            Frames and overlays below come from the selected physical camera and the real inference pipeline.
+          <p className="mt-1 text-xs text-[#CBD5E1] leading-relaxed">
+            Real camera feeds and inference overlays streamed from hardware nodes. No synthetic demo frames are shown.
           </p>
         </div>
-        <div className="flex gap-2 items-center">
-          <select aria-label="Select camera" className="rounded-lg bg-[#171A24] border border-[#2B3040] p-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium" value={cameraId} onChange={(e) => setCameraId(e.target.value)}>
-            <option value="">Select a camera</option>
-            {cameras.map((cam) => <option key={cam.id} value={cam.id}>{cam.name} ({cam.id})</option>)}
+        <div className="flex gap-2.5 items-center flex-wrap">
+          <select
+            aria-label="Select camera"
+            className="rounded-xl bg-[#09111E] border border-[#26354D] px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#00A8C6] font-medium shadow-inner"
+            value={cameraId}
+            onChange={(e) => setCameraId(e.target.value)}
+          >
+            <option value="" className="bg-[#09111E] text-white">Select a camera</option>
+            {cameras.map((cam) => (
+              <option key={cam.id} value={cam.id} className="bg-[#09111E] text-white">
+                {cam.name} ({cam.id})
+              </option>
+            ))}
           </select>
-          <button disabled={busy || !cameraId || !selected?.stream_configured || sourceActive} onClick={() => void control('start')} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition disabled:opacity-40">
-            <Play size={14} className="fill-current" />Start
+          <button
+            disabled={busy || !cameraId || !selected?.stream_configured || sourceActive}
+            onClick={() => void control('start')}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A8C6] hover:bg-[#0090AA] px-4 py-2 text-xs font-semibold text-white shadow-sm transition disabled:opacity-40"
+          >
+            <Play size={14} className="fill-current" />
+            <span>Start</span>
           </button>
-          <button disabled={busy || !sourceActive} onClick={() => void control('stop')} className="inline-flex items-center gap-1.5 rounded-lg bg-[#171A24] hover:bg-[#222634] border border-[#2B3040] px-3.5 py-2 text-xs font-semibold text-slate-300 transition disabled:opacity-40">
-            <Square size={13} />Stop
+          <button
+            disabled={busy || !sourceActive}
+            onClick={() => void control('stop')}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#09111E] hover:bg-[#1a283e] border border-[#26354D] px-3.5 py-2 text-xs font-semibold text-[#CBD5E1] transition disabled:opacity-40"
+          >
+            <Square size={13} />
+            <span>Stop</span>
           </button>
         </div>
       </header>
 
       {!cameras.length ? (
-        <div className="rounded-xl border border-amber-800/60 bg-amber-950/20 p-5 text-sm text-amber-200">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800 shadow-sm font-medium">
           No camera is registered. Add a camera and configure a webcam or allowlisted RTSP source on the Cameras page.
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)] gap-6">
-          <section className="glass-panel rounded-xl border border-[#222634] p-4 space-y-3 shadow-sm">
+          <section className="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-3.5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-semibold text-white">{selected?.name ?? 'Camera feed'}</h2>
-                <p className="text-xs text-slate-400">{selected?.location_name ?? ''} {selected?.direction ? `· ${selected.direction}` : ''}</p>
+                <h2 className="font-bold text-base text-slate-900">{selected?.name ?? 'Camera feed'}</h2>
+                <p className="text-xs text-slate-500 font-medium">{selected?.location_name ?? ''} {selected?.direction ? `· ${selected.direction}` : ''}</p>
               </div>
-              <span className={`text-xs uppercase font-mono font-semibold ${connected ? 'text-emerald-400' : status?.status === 'failed' ? 'text-rose-400' : 'text-amber-400'}`}>
+              <span className={`text-xs uppercase font-mono font-bold px-2.5 py-1 rounded-lg border ${
+                connected
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : status?.status === 'failed'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>
                 <Activity className="inline mr-1" size={13} />{status?.status ?? 'stopped'}
               </span>
             </div>
             {connected ? (
-              <img key={cameraId} src={api.getLiveCameraStreamUrl(cameraId)} alt={`${selected?.name ?? 'Camera'} live frame with detected vehicle and plate overlays`} className="w-full aspect-video rounded-lg bg-black object-contain border border-[#222634]" onError={() => setError('The live frame stream ended. Check camera status and reconnect if needed.')} />
+              <img key={cameraId} src={api.getLiveCameraStreamUrl(cameraId)} alt={`${selected?.name ?? 'Camera'} live frame with detected vehicle and plate overlays`} className="w-full aspect-video rounded-xl bg-black object-contain border border-slate-200" onError={() => setError('The live frame stream ended. Check camera status and reconnect if needed.')} />
             ) : (
-              <div className="aspect-video rounded-lg border border-[#222634] bg-[#0D0F16] flex flex-col items-center justify-center text-center p-6">
-                <Camera className="text-slate-600 mb-3" size={34} />
-                <p className="text-sm text-slate-300">{status?.status === 'reconnecting' ? 'Camera disconnected. Reconnection is in progress.' : status?.status === 'failed' ? 'Live processing failed.' : selected?.stream_configured ? 'Monitoring is starting or stopped. The live view appears after the first successful frame.' : 'No physical camera source is configured.'}</p>
-                <p className="mt-2 text-xs text-slate-500">The live view does not substitute demo footage or generated detections.</p>
+              <div className="aspect-video rounded-xl border border-slate-200 bg-slate-950 flex flex-col items-center justify-center text-center p-6">
+                <Camera className="text-slate-500 mb-3" size={36} />
+                <p className="text-sm text-slate-200 font-medium">{status?.status === 'reconnecting' ? 'Camera disconnected. Reconnection is in progress.' : status?.status === 'failed' ? 'Live processing failed.' : selected?.stream_configured ? 'Monitoring is starting or stopped. The live view appears after the first successful frame.' : 'No physical camera source is configured.'}</p>
+                <p className="mt-2 text-xs text-slate-400">The live view does not substitute demo footage or generated detections.</p>
               </div>
             )}
-            <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-400 font-mono">
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500 font-mono">
               <span>Last frame: {status?.last_frame_at ? new Date(status.last_frame_at).toLocaleString() : 'none received'}</span>
               <span className="tabular-nums">Reconnects: {status?.reconnect_count ?? 0}</span>
               <span>Size: {status?.frame_width && status.frame_height ? `${status.frame_width}×${status.frame_height}` : 'unknown'}</span>
             </div>
-            {(error || status?.error) && <p role="alert" className="text-sm text-rose-300">{error || status?.error}</p>}
+            {(error || status?.error) && <p role="alert" className="text-sm text-rose-700 font-semibold">{error || status?.error}</p>}
           </section>
 
-          <section className="glass-panel rounded-xl border border-[#222634] p-4 shadow-sm">
-            <h2 className="font-semibold text-white mb-3">Recent detections</h2>
+          <section className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
+            <h2 className="font-bold text-base text-slate-900 mb-3">Recent detections</h2>
             {events.length ? (
-              <div className="space-y-2 max-h-[510px] overflow-auto">
+              <div className="space-y-2.5 max-h-[510px] overflow-auto">
                 {events.map((event) => (
-                  <article key={event.id} className="rounded-lg border border-[#222634] bg-[#171A24]/60 p-3 text-xs">
+                  <article key={event.id} className="rounded-xl border border-slate-200/90 bg-[#F8FAFC] p-3 text-xs shadow-sm hover:bg-white hover:border-teal-200 transition">
                     <div className="flex justify-between gap-2">
-                      <strong className="text-blue-400 font-mono font-bold">{event.plate_text || event.normalized_ocr_text || event.raw_ocr_text || 'Plate not read'}</strong>
-                      <span className="text-slate-400 font-mono text-[10px]">{new Date(event.captured_at).toLocaleTimeString()}</span>
+                      <strong className="text-[#00A8C6] font-mono font-bold text-sm">{event.plate_text || event.normalized_ocr_text || event.raw_ocr_text || 'Plate not read'}</strong>
+                      <span className="text-slate-500 font-mono text-[10px]">{new Date(event.captured_at).toLocaleTimeString()}</span>
                     </div>
-                    <p className="mt-1 text-slate-300">Track {event.track_id ?? 'unassigned'} · {event.vehicle_class} · vehicle {event.vehicle_confidence.toFixed(2)}</p>
-                    <p className="text-slate-400 font-mono text-[11px] tabular-nums">OCR conf: {event.ocr_confidence == null ? '—' : event.ocr_confidence.toFixed(2)} · plate conf: {event.plate_confidence == null ? '—' : event.plate_confidence.toFixed(2)}</p>
-                    {event.raw_ocr_text && <p className="text-slate-400 font-mono text-[10px]">Raw OCR: {event.raw_ocr_text}</p>}
-                    {event.plate_crop_url && <img src={event.plate_crop_url} alt="Detected license plate crop" className="mt-2 max-h-16 rounded border border-[#222634] bg-black object-contain" />}
+                    <p className="mt-1 text-slate-700 font-medium">Track {event.track_id ?? 'unassigned'} · {event.vehicle_class} · vehicle {event.vehicle_confidence.toFixed(2)}</p>
+                    <p className="text-slate-500 font-mono text-[11px] tabular-nums">OCR conf: {event.ocr_confidence == null ? '—' : event.ocr_confidence.toFixed(2)} · plate conf: {event.plate_confidence == null ? '—' : event.plate_confidence.toFixed(2)}</p>
+                    {event.raw_ocr_text && <p className="text-slate-500 font-mono text-[10px]">Raw OCR: {event.raw_ocr_text}</p>}
+                    {event.plate_crop_url && <img src={event.plate_crop_url} alt="Detected license plate crop" className="mt-2 max-h-16 rounded-lg border border-slate-200 bg-black object-contain shadow-sm" />}
                   </article>
                 ))}
               </div>
@@ -129,10 +160,10 @@ export const LiveMonitoring: React.FC = () => {
       )}
 
       {routes && (
-        <section className="glass-panel rounded-xl border border-[#222634] p-4 space-y-3 shadow-sm">
+        <section className="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-3 shadow-sm">
           <div>
-            <h2 className="font-semibold text-white">Calibrated geographic estimates</h2>
-            <p className="text-xs text-slate-400">Only calibrated ground-plane points and imported GPS observations appear here. Pixel coordinates are never shown as geographic positions.</p>
+            <h2 className="font-bold text-base text-slate-900">Calibrated geographic estimates</h2>
+            <p className="text-xs text-[#64748B]">Only calibrated ground-plane points and imported GPS observations appear here. Pixel coordinates are never shown as geographic positions.</p>
           </div>
           {routes.tracks.length ? (
             <GeographicRouteMap tracks={routes.tracks} />
@@ -142,14 +173,14 @@ export const LiveMonitoring: React.FC = () => {
         </section>
       )}
 
-      <details className="rounded-xl border border-[#222634] bg-[#11131A] p-4 shadow-sm">
-        <summary className="cursor-pointer text-xs font-semibold text-slate-400 hover:text-slate-200">Synthetic simulation demo (separate from physical camera feeds)</summary>
-        <p className="mt-3 text-xs text-amber-300">Demo controls below do not produce camera frames or live ANPR events.</p>
+      <details className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
+        <summary className="cursor-pointer text-xs font-semibold text-slate-600 hover:text-slate-900">Synthetic simulation demo (separate from physical camera feeds)</summary>
+        <p className="mt-3 text-xs text-amber-700 font-medium">Demo controls below do not produce camera frames or live ANPR events.</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button onClick={() => void startSimulation()} disabled={isSimRunning && !isSimPaused} className="rounded-lg bg-[#171A24] border border-[#2B3040] px-3 py-2 text-xs font-semibold text-white hover:bg-[#222634] transition">Start demo</button>
-          <button onClick={() => void pauseSimulation()} disabled={!isSimRunning || isSimPaused} className="rounded-lg bg-[#171A24] border border-[#2B3040] px-3 py-2 text-xs font-semibold text-white hover:bg-[#222634] transition">Pause demo</button>
-          <button onClick={() => void resetSimulation()} className="rounded-lg bg-[#171A24] border border-[#2B3040] px-3 py-2 text-xs font-semibold text-white hover:bg-[#222634] transition">Reset demo</button>
-          <span className="self-center text-xs font-mono text-slate-400 ml-2">{isSimRunning ? (isSimPaused ? 'Paused' : 'Running') : 'Stopped'}</span>
+          <button onClick={() => void startSimulation()} disabled={isSimRunning && !isSimPaused} className="rounded-xl bg-[#F8FAFC] border border-slate-300 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-white hover:text-[#00A8C6] shadow-sm transition">Start demo</button>
+          <button onClick={() => void pauseSimulation()} disabled={!isSimRunning || isSimPaused} className="rounded-xl bg-[#F8FAFC] border border-slate-300 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-white hover:text-[#00A8C6] shadow-sm transition">Pause demo</button>
+          <button onClick={() => void resetSimulation()} className="rounded-xl bg-[#F8FAFC] border border-slate-300 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-white hover:text-[#00A8C6] shadow-sm transition">Reset demo</button>
+          <span className="self-center text-xs font-mono text-slate-500 ml-2">{isSimRunning ? (isSimPaused ? 'Paused' : 'Running') : 'Stopped'}</span>
         </div>
       </details>
     </div>

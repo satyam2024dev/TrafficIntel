@@ -42,20 +42,20 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#090A0F] p-4 text-[#F8FAFC]">
+    <main className="flex min-h-screen items-center justify-center bg-[#EEF2F6] p-4 text-[#0F172A]">
       <div className="w-full max-w-md">
         {/* Tactical Command Brand Banner */}
         <div className="mb-6 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-950/60 border border-blue-500/40 text-blue-500 mb-3 shadow-sm">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 text-[#00A8C6] mb-3 shadow-sm">
             <Shield className="w-6 h-6" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center justify-center gap-1.5">
-            TRAFFIC<span className="text-blue-500">INTEL</span>
-            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#171A24] text-blue-400 border border-[#2B3040] ml-1">
+          <h1 className="text-xl font-bold tracking-tight text-[#0F172A] flex items-center justify-center gap-1.5">
+            TRAFFIC<span className="text-[#00A8C6]">INTEL</span>
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded-md bg-slate-100 text-[#0891B2] border border-slate-200 ml-1 font-bold">
               OPS v1.0
             </span>
           </h1>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-500">
             Tactical Traffic Intelligence & Multi-Camera ANPR Command Portal
           </p>
         </div>
@@ -63,13 +63,13 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
         {/* Auth Card */}
         <form
           onSubmit={submit}
-          className="rounded-xl border border-[#222634] bg-[#11131A] p-6 sm:p-8 shadow-sm space-y-5"
+          className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-sm space-y-5"
         >
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-800">
               Operator Sign In
             </h2>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-500">
               Provide provisioned credentials to access system telemetry and camera nodes.
             </p>
           </div>
@@ -77,17 +77,17 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
           {error && (
             <div
               role="alert"
-              className="rounded-lg bg-red-950/40 border border-red-500/30 p-3 text-xs text-red-300 flex items-start gap-2"
+              className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700 flex items-start gap-2"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] mt-1.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div className="space-y-4">
-            <label className="block text-xs font-medium text-slate-300">
+            <label className="block text-xs font-medium text-slate-700">
               <span className="flex items-center gap-1.5 mb-1.5">
-                <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+                <UserIcon className="w-3.5 h-3.5 text-slate-500" />
                 Username
               </span>
               <input
@@ -97,13 +97,13 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="operator_id"
-                className="w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-mono"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A8C6]/40 focus:border-[#00A8C6] focus:bg-white transition-all font-mono"
               />
             </label>
 
-            <label className="block text-xs font-medium text-slate-300">
+            <label className="block text-xs font-medium text-slate-700">
               <span className="flex items-center gap-1.5 mb-1.5">
-                <Lock className="w-3.5 h-3.5 text-slate-400" />
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
                 Password
               </span>
               <input
@@ -113,7 +113,7 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-mono"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00A8C6]/40 focus:border-[#00A8C6] focus:bg-white transition-all font-mono"
               />
             </label>
           </div>
@@ -121,7 +121,7 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-lg bg-blue-600 hover:bg-blue-500 active:bg-blue-700 py-2.5 text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full rounded-xl bg-[#00A8C6] hover:bg-[#0090AA] active:bg-[#007B92] py-2.5 text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {busy ? (
               <>
@@ -133,8 +133,8 @@ const SignIn: React.FC<{ onLogin: (user: SessionUser) => void }> = ({ onLogin })
             )}
           </button>
 
-          <div className="pt-2 border-t border-[#222634] text-center">
-            <span className="text-[11px] font-mono text-slate-400">
+          <div className="pt-2 border-t border-slate-200 text-center">
+            <span className="text-[11px] font-mono text-slate-500">
               Secured Session • Role-Based Access Control
             </span>
           </div>
@@ -183,10 +183,10 @@ const ApplicationRoutes: React.FC = () => {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#090A0F] text-sm text-slate-400 font-mono">
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] text-sm text-slate-600 font-mono">
         <div className="flex items-center gap-3">
-          <span className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-          <span>INITIALIZING COMMAND CONSOLE...</span>
+          <span className="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+          <span className="font-semibold text-slate-700">INITIALIZING COMMAND CONSOLE...</span>
         </div>
       </div>
     );

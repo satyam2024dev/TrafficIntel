@@ -14,7 +14,9 @@ from fastapi import Cookie, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.core.config import allowed_origins, dev_auth_trusted_origins, settings
+from backend.app.core.config import (
+    allowed_origins, dev_auth_trusted_origins, is_request_origin_allowed, settings,
+)
 from backend.app.database.session import get_db
 from backend.app.models.models import User
 
@@ -115,5 +117,5 @@ def enforce_browser_origin(request: Request) -> None:
     origin = request.headers.get("origin")
     if not origin:
         return
-    if origin not in allowed_origins():
+    if not is_request_origin_allowed(origin):
         raise HTTPException(status_code=403, detail="Request origin is not allowed.")

@@ -20,31 +20,31 @@ export function formatDuration(minutes: number): string {
 export function getWeatherBadge(condition: string) {
   switch (condition.toLowerCase()) {
     case 'rain':
-      return { label: 'Rain', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: '🌧️', filter: 'CLAHE' };
+      return { label: 'Rain', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: '🌧️', filter: 'CLAHE' };
     case 'fog':
-      return { label: 'Fog', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30', icon: '🌫️', filter: 'Dehaze' };
+      return { label: 'Fog', color: 'bg-slate-100 text-slate-700 border-slate-300', icon: '🌫️', filter: 'Dehaze' };
     case 'night':
-      return { label: 'Night', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30', icon: '🌙', filter: 'Gamma 0.55' };
+      return { label: 'Night', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: '🌙', filter: 'Gamma 0.55' };
     case 'low_light':
-      return { label: 'Low Light', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30', icon: '🌆', filter: 'Gamma+CLAHE' };
+      return { label: 'Low Light', color: 'bg-purple-50 text-purple-700 border-purple-200', icon: '🌆', filter: 'Gamma+CLAHE' };
     case 'glare':
-      return { label: 'Glare', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30', icon: '☀️', filter: 'Anti-Glare' };
+      return { label: 'Glare', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: '☀️', filter: 'Anti-Glare' };
     case 'clear':
     default:
-      return { label: 'Clear', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', icon: '☀️', filter: 'RGB Pass' };
+      return { label: 'Clear', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: '☀️', filter: 'RGB Pass' };
   }
 }
 
 export function getSeverityBadge(severity: string) {
   switch (severity.toLowerCase()) {
     case 'critical':
-      return { label: 'CRITICAL', color: 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse' };
+      return { label: 'CRITICAL', color: 'bg-rose-50 text-rose-700 border-rose-300 font-bold animate-pulse' };
     case 'high':
-      return { label: 'HIGH', color: 'bg-orange-500/20 text-orange-400 border-orange-500/40' };
+      return { label: 'HIGH', color: 'bg-orange-50 text-orange-700 border-orange-300 font-semibold' };
     case 'warning':
-      return { label: 'WARNING', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' };
+      return { label: 'WARNING', color: 'bg-amber-50 text-amber-800 border-amber-300 font-semibold' };
     case 'info':
     default:
-      return { label: 'INFO', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' };
+      return { label: 'INFO', color: 'bg-blue-50 text-blue-700 border-blue-200 font-medium' };
   }
 }

@@ -6,6 +6,7 @@ interface PlateBadgeProps {
   isValid?: boolean;
   status?: 'valid' | 'invalid' | 'unvalidated' | 'pending';
   size?: 'sm' | 'md' | 'lg';
+  vehicleType?: string;
 }
 
 export const PlateBadge: React.FC<PlateBadgeProps> = ({
@@ -14,6 +15,7 @@ export const PlateBadge: React.FC<PlateBadgeProps> = ({
   isValid,
   status,
   size = 'md',
+  vehicleType,
 }) => {
   const sizeClasses = {
     sm: 'text-xs h-6',
@@ -31,25 +33,27 @@ export const PlateBadge: React.FC<PlateBadgeProps> = ({
       ? 'invalid'
       : undefined);
 
+  const isCommercial = vehicleType?.toLowerCase() === 'truck' || vehicleType?.toLowerCase() === 'bus';
+
   const statusBorderClass = isFlagged
-    ? 'border-rose-600 ring-2 ring-rose-500/50'
+    ? 'border-rose-600 ring-2 ring-rose-400'
     : determinedStatus === 'valid'
-    ? 'border-emerald-600 ring-1 ring-emerald-500/40'
+    ? 'border-emerald-600 ring-1 ring-emerald-300'
     : determinedStatus === 'invalid'
-    ? 'border-rose-500/80'
+    ? 'border-rose-400'
     : determinedStatus === 'unvalidated' || determinedStatus === 'pending'
-    ? 'border-amber-500/60'
-    : 'border-slate-800';
+    ? 'border-amber-400'
+    : 'border-slate-400';
 
   return (
     <div
-      className={`license-plate-ui ${sizeClasses[size]} ${statusBorderClass}`}
+      className={`license-plate-ui ${isCommercial ? 'license-plate-commercial' : 'bg-white'} ${sizeClasses[size]} ${statusBorderClass}`}
       title={isFlagged ? 'FLAGGED VEHICLE' : `License Plate: ${plate || 'UNKNOWN'}`}
     >
       <div className="license-plate-ind h-full justify-center">
-        <span className="text-[8px] leading-tight font-extrabold text-blue-200">IND</span>
+        <span className="text-[8px] leading-tight font-extrabold text-blue-100">IND</span>
       </div>
-      <span className="font-mono text-slate-900 font-extrabold pr-2.5 tracking-wider tabular-nums">
+      <span className="font-mono text-[#0F172A] font-extrabold pr-2.5 tracking-wider tabular-nums">
         {plate || 'UNKNOWN'}
       </span>
       {isFlagged && (

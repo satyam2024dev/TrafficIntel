@@ -18,7 +18,7 @@ export const WeatherBadge: React.FC<WeatherBadgeProps> = ({ condition, showFilte
         <span className="capitalize">{badge.label}</span>
       </span>
       {showFilter && (
-        <span className="text-[10px] font-mono text-blue-400 bg-[#171A24] border border-[#2B3040] px-1.5 py-0.5 rounded">
+        <span className="text-[10px] font-mono text-blue-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-medium">
           {badge.filter}
         </span>
       )}

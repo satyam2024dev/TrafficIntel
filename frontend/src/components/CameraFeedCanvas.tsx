@@ -255,7 +255,7 @@ export const CameraFeedCanvas: React.FC<CameraFeedCanvasProps> = ({
   const weatherBadge = getWeatherBadge(weatherCondition);
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden border border-[#222634] flex flex-col shadow-sm">
+    <div className="bg-white rounded-xl overflow-hidden border border-[#E2E8F0] flex flex-col shadow-sm">
       <div className="relative aspect-video w-full bg-[#0D0F16]">
         <canvas
           ref={canvasRef}
@@ -264,25 +264,25 @@ export const CameraFeedCanvas: React.FC<CameraFeedCanvasProps> = ({
           className="w-full h-full object-cover"
         />
         <div className="absolute bottom-2 left-2 flex items-center gap-2">
-          <span className="text-[10px] font-mono bg-black/70 text-slate-300 px-2 py-0.5 rounded border border-[#2B3040] backdrop-blur-sm">
+          <span className="text-[10px] font-mono bg-black/75 text-slate-200 px-2 py-0.5 rounded border border-white/20 backdrop-blur-sm">
             {locationName}
           </span>
         </div>
         <div className="absolute top-2 right-2 flex items-center gap-1.5">
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/70 text-emerald-400 border border-emerald-500/40">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/75 text-emerald-300 border border-emerald-500/40">
             AUTO-ENHANCE: {weatherBadge.filter}
           </span>
         </div>
       </div>
 
-      <div className="px-3.5 py-2.5 bg-[#11131A] border-t border-[#222634] flex items-center justify-between text-xs">
+      <div className="px-3.5 py-2.5 bg-white border-t border-[#E2E8F0] flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-mono font-semibold text-slate-200">{cameraId}</span>
-          <span className="text-slate-400 text-[11px] truncate max-w-[120px]">{cameraName}</span>
+          <span className="font-mono font-semibold text-slate-900">{cameraId}</span>
+          <span className="text-slate-500 text-[11px] truncate max-w-[120px]">{cameraName}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono tabular-nums text-blue-400">{fps.toFixed(1)} fps</span>
+          <span className="text-[11px] font-mono tabular-nums text-blue-600 font-semibold">{fps.toFixed(1)} fps</span>
           <span className={`text-[10px] px-2 py-0.5 rounded border ${weatherBadge.color}`}>
             {weatherBadge.icon} {weatherBadge.label}
           </span>

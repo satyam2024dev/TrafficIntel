@@ -128,45 +128,45 @@ export const ANPREvaluationPanel: React.FC<ANPREvaluationPanelProps> = ({ jobId,
   };
 
   return (
-    <section className="glass-panel space-y-4 rounded-xl border border-[#222634] p-4 shadow-sm" aria-labelledby="anpr-evaluation-heading">
+    <section className="bg-white space-y-4 rounded-xl border border-[#E2E8F0] p-4 shadow-sm" aria-labelledby="anpr-evaluation-heading">
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-blue-500">Phase 2 · Ground-truth evaluation</p>
-        <h3 id="anpr-evaluation-heading" className="mt-1 flex items-center gap-2 text-base font-bold text-white"><ClipboardCheck className="h-4 w-4 text-blue-500" /> ANPR accuracy evaluation</h3>
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">Manually label every plate in each reviewed sample, including plate pixel boxes. For video, labels apply to sampled frame numbers. Detection metrics use one-to-one IoU matching; unreviewed frames are excluded.</p>
-        {media.width && media.height && <p className="mt-1 text-[10px] font-mono text-slate-500">Source coordinate space: {media.width} × {media.height} pixels. Use the original image/video frame shown above.</p>}
+        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-blue-600 font-bold">Phase 2 · Ground-truth evaluation</p>
+        <h3 id="anpr-evaluation-heading" className="mt-1 flex items-center gap-2 text-base font-bold text-[#0F172A]"><ClipboardCheck className="h-4 w-4 text-blue-600" /> ANPR accuracy evaluation</h3>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">Manually label every plate in each reviewed sample, including plate pixel boxes. For video, labels apply to sampled frame numbers. Detection metrics use one-to-one IoU matching; unreviewed frames are excluded.</p>
+        {media.width && media.height && <p className="mt-1 text-[10px] font-mono text-slate-400">Source coordinate space: {media.width} × {media.height} pixels. Use the original image/video frame shown above.</p>}
       </div>
 
       {frameOptions.length > 0 ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <label className="space-y-1 text-[10px] text-slate-400">Processed sample
-          <select value={frameNumber} onChange={(event) => onFrameSelect(Number(event.target.value))} className="w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-2 py-2 text-xs text-white">
+        <label className="space-y-1 text-[10px] text-slate-600 font-medium">Processed sample
+          <select value={frameNumber} onChange={(event) => onFrameSelect(Number(event.target.value))} className="w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-2 py-2 text-xs text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-blue-500">
             {frameOptions.map((frame) => <option key={frame} value={frame}>{media.media_type === 'image' ? 'Image' : `Frame ${frame}`}{frames.find((item) => item.frame_number === frame) ? ` · ${frames.find((item) => item.frame_number === frame)?.timestamp.toFixed(2)}s` : ''}</option>)}
           </select>
         </label>
-        <label className="space-y-1 text-[10px] text-slate-400">Ground-truth Indian registration number
-          <input value={draft.registration_number} onChange={(event) => setDraft({ ...draft, registration_number: event.target.value })} placeholder="KA01AB1234" className="w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-2 py-2 text-xs font-mono text-white" />
+        <label className="space-y-1 text-[10px] text-slate-600 font-medium">Ground-truth Indian registration number
+          <input value={draft.registration_number} onChange={(event) => setDraft({ ...draft, registration_number: event.target.value })} placeholder="KA01AB1234" className="w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-2 py-2 text-xs font-mono text-[#0F172A] focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </label>
-        <label className="space-y-1 text-[10px] text-slate-400">Plate box x1, y1, x2, y2 (pixels)
-          <div className="grid grid-cols-4 gap-1">{(['x1', 'y1', 'x2', 'y2'] as const).map((key) => <input key={key} aria-label={key} type="number" min="0" value={draft[key]} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} placeholder={key} className="min-w-0 rounded border border-[#2B3040] bg-[#171A24] px-2 py-2 text-xs font-mono text-white" />)}</div>
+        <label className="space-y-1 text-[10px] text-slate-600 font-medium">Plate box x1, y1, x2, y2 (pixels)
+          <div className="grid grid-cols-4 gap-1">{(['x1', 'y1', 'x2', 'y2'] as const).map((key) => <input key={key} aria-label={key} type="number" min="0" value={draft[key]} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} placeholder={key} className="min-w-0 rounded border border-[#CBD5E1] bg-[#F8FAFC] px-2 py-2 text-xs font-mono text-[#0F172A]" />)}</div>
         </label>
         <div className="flex flex-wrap items-end gap-2">
-          <button type="button" onClick={addGroundTruthPlate} className="flex items-center gap-1 rounded-lg bg-blue-600 hover:bg-blue-500 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition"><Plus className="h-3.5 w-3.5" /> Add labeled plate</button>
-          <button type="button" onClick={markSampleReviewed} className="rounded-lg border border-[#2B3040] bg-[#171A24] px-3 py-2 text-[11px] text-slate-300 hover:text-white transition">Mark frame reviewed (zero plates)</button>
+          <button type="button" onClick={addGroundTruthPlate} className="flex items-center gap-1 rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition"><Plus className="h-3.5 w-3.5" /> Add labeled plate</button>
+          <button type="button" onClick={markSampleReviewed} className="rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2 text-[11px] text-slate-700 hover:bg-white shadow-xs transition font-medium">Mark frame reviewed (zero plates)</button>
         </div>
-        <label className="space-y-1 text-[10px] text-slate-400">Detection IoU match threshold
-          <input type="number" min="0.01" max="1" step="0.05" value={iouThreshold} onChange={(event) => setIouThreshold(event.target.value)} className="w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-2 py-2 text-xs font-mono text-white" />
+        <label className="space-y-1 text-[10px] text-slate-600 font-medium">Detection IoU match threshold
+          <input type="number" min="0.01" max="1" step="0.05" value={iouThreshold} onChange={(event) => setIouThreshold(event.target.value)} className="w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-2 py-2 text-xs font-mono text-[#0F172A]" />
         </label>
-        <div className="flex items-end"><button type="button" onClick={() => { void submitEvaluation(); }} disabled={busy || !samples.length} className="flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-2 text-[11px] font-semibold text-white shadow-sm enabled:hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 transition"><Save className="h-3.5 w-3.5" /> {busy ? 'Evaluating…' : 'Evaluate labeled samples'}</button></div>
-      </div> : <p className="rounded border border-amber-900/60 bg-amber-950/20 p-3 text-xs text-amber-200">No processed sample frames are available for annotation.</p>}
+        <div className="flex items-end"><button type="button" onClick={() => { void submitEvaluation(); }} disabled={busy || !samples.length} className="flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-[11px] font-semibold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50 transition"><Save className="h-3.5 w-3.5" /> {busy ? 'Evaluating…' : 'Evaluate labeled samples'}</button></div>
+      </div> : <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">No processed sample frames are available for annotation.</p>}
 
-      {error && <p role="alert" className="rounded border border-rose-900/60 bg-rose-950/30 p-3 text-xs text-rose-200">{error}</p>}
-      {notice && <p role="status" className="rounded border border-emerald-900/60 bg-emerald-950/20 p-3 text-xs text-emerald-200">{notice}</p>}
-      {samples.length > 0 && <div className="space-y-2 rounded-lg border border-[#222634] bg-[#11131A] p-3">
-        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Samples to score</h4>
-        {samples.map((sample) => <div key={sample.frame_number} className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400"><span>{media.media_type === 'image' ? 'Image' : `Frame ${sample.frame_number}`} · {sample.ground_truth_plates.length} ground-truth plates</span><div className="flex flex-wrap gap-2">{sample.ground_truth_plates.map((plate) => <span key={plate.id} className="flex items-center gap-1 rounded bg-[#171A24] border border-[#2B3040] px-2 py-1 font-mono text-blue-300">{plate.registration_number}<button type="button" onClick={() => removeGroundTruthPlate(sample.frame_number, plate.id)} aria-label={`Remove ${plate.registration_number} ground truth`} className="text-rose-300">×</button></span>)}<button type="button" onClick={() => removeSample(sample.frame_number)} className="text-rose-300 hover:text-rose-200">Remove sample</button></div></div>)}
+      {error && <p role="alert" className="rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 font-medium">{error}</p>}
+      {notice && <p role="status" className="rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-medium">{notice}</p>}
+      {samples.length > 0 && <div className="space-y-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3 shadow-xs">
+        <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-700">Samples to score</h4>
+        {samples.map((sample) => <div key={sample.frame_number} className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600"><span>{media.media_type === 'image' ? 'Image' : `Frame ${sample.frame_number}`} · {sample.ground_truth_plates.length} ground-truth plates</span><div className="flex flex-wrap gap-2">{sample.ground_truth_plates.map((plate) => <span key={plate.id} className="flex items-center gap-1 rounded bg-white border border-slate-200 px-2 py-1 font-mono text-blue-700 font-semibold shadow-2xs">{plate.registration_number}<button type="button" onClick={() => removeGroundTruthPlate(sample.frame_number, plate.id)} aria-label={`Remove ${plate.registration_number} ground truth`} className="text-rose-600 font-bold ml-1">×</button></span>)}<button type="button" onClick={() => removeSample(sample.frame_number)} className="text-rose-600 hover:text-rose-700 font-medium">Remove sample</button></div></div>)}
       </div>}
 
-      {history.length > 0 && <label className="block space-y-1 text-[10px] text-slate-400">Saved evaluation report
-        <select value={latest?.id ?? history[0].id} onChange={(event) => setLatest(history.find((item) => item.id === Number(event.target.value)) ?? null)} className="w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-2 py-2 text-xs text-white">
+      {history.length > 0 && <label className="block space-y-1 text-[10px] text-slate-600 font-medium">Saved evaluation report
+        <select value={latest?.id ?? history[0].id} onChange={(event) => setLatest(history.find((item) => item.id === Number(event.target.value)) ?? null)} className="w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-2 py-2 text-xs text-[#0F172A]">
           {history.map((item) => <option key={item.id} value={item.id}>Report #{item.id} · {new Date(item.created_at).toLocaleString()}</option>)}
         </select>
       </label>}
@@ -181,8 +181,8 @@ const EvaluationReport: React.FC<{ report: ANPREvaluationReport }> = ({ report }
     ...Object.entries(report.confidence_analysis.plate_detection_confidence).map(([label, value]) => ({ name: `Plate detector · ${label.replace(/_/g, ' ')}`, ...value })),
     ...Object.entries(report.confidence_analysis.ocr_confidence).map(([label, value]) => ({ name: `OCR · ${label.replace(/_/g, ' ')}`, ...value })),
   ];
-  return <div className="space-y-3 border-t border-[#222634] pt-4">
-    <h4 className="text-xs font-bold uppercase tracking-wider text-white">Evaluation report</h4>
+  return <div className="space-y-3 border-t border-[#E2E8F0] pt-4">
+    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">Evaluation report</h4>
     <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
       <Metric label="Detection precision" value={percent(summary.precision)} />
       <Metric label="Detection recall" value={percent(summary.recall)} />
@@ -195,35 +195,35 @@ const EvaluationReport: React.FC<{ report: ANPREvaluationReport }> = ({ report }
       <Metric label="OCR failures / errors" value={`${summary.ocr_failure_count} / ${summary.incorrect_ocr_count}`} />
       <Metric label="Labeled samples" value={summary.sample_count} />
     </div>
-    <div className="rounded-lg border border-[#222634] bg-[#11131A] p-3">
-      <h5 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Independent confidence analysis</h5>
+    <div className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3 shadow-xs">
+      <h5 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-700">Independent confidence analysis</h5>
       <p className="mb-2 text-[10px] text-slate-500">Plate confidence scores localization; OCR confidence scores text recognition.</p>
-      <div className="grid gap-1 md:grid-cols-2">{confidenceGroups.map((group) => <div key={group.name} className="flex justify-between gap-2 text-[10px] text-slate-300"><span>{group.name} ({group.count})</span><span className="font-mono tabular-nums">{confidence(group.mean)}</span></div>)}</div>
+      <div className="grid gap-1 md:grid-cols-2">{confidenceGroups.map((group) => <div key={group.name} className="flex justify-between gap-2 text-[10px] text-slate-700"><span>{group.name} ({group.count})</span><span className="font-mono tabular-nums font-semibold">{confidence(group.mean)}</span></div>)}</div>
     </div>
-    <div className="overflow-x-auto rounded-lg border border-[#222634]">
+    <div className="overflow-x-auto rounded-lg border border-[#E2E8F0] shadow-xs">
       <table className="w-full min-w-[700px] text-left text-[10px]">
-        <thead className="bg-[#171A24] text-slate-400"><tr><th className="p-2">Sample</th><th className="p-2">Detection TP / FP / FN</th><th className="p-2">OCR exact</th><th className="p-2">CER</th><th className="p-2">Ground truth & predictions</th></tr></thead>
-        <tbody className="divide-y divide-[#222634]">{report.samples.map((sample) => <tr key={sample.frame_number} className="align-top text-slate-300">
-          <td className="p-2">Frame {sample.frame_number}</td>
-          <td className="p-2">{sample.detection.true_positives} / {sample.detection.false_positives} / {sample.detection.false_negatives}<span className="block text-slate-500">P {percent(sample.detection.precision)} · R {percent(sample.detection.recall)}</span></td>
-          <td className="p-2">{sample.ocr.exact_matches}/{sample.ocr.count}<span className="block text-slate-500">{percent(sample.ocr.exact_match_accuracy)}</span></td>
-          <td className="p-2">{percent(sample.ocr.character_error_rate)}</td>
-          <td className="space-y-2 p-2">{sample.ground_truth.map((item, index) => <div key={`gt-${index}`} className="rounded bg-[#171A24] p-2 font-mono">
+        <thead className="bg-[#F8FAFC] text-slate-600 border-b border-[#E2E8F0]"><tr><th className="p-2">Sample</th><th className="p-2">Detection TP / FP / FN</th><th className="p-2">OCR exact</th><th className="p-2">CER</th><th className="p-2">Ground truth & predictions</th></tr></thead>
+        <tbody className="divide-y divide-[#E2E8F0]">{report.samples.map((sample) => <tr key={sample.frame_number} className="align-top text-slate-700">
+          <td className="p-2 font-medium">Frame {sample.frame_number}</td>
+          <td className="p-2">{sample.detection.true_positives} / {sample.detection.false_positives} / {sample.detection.false_negatives}<span className="block text-slate-500 font-mono">P {percent(sample.detection.precision)} · R {percent(sample.detection.recall)}</span></td>
+          <td className="p-2">{sample.ocr.exact_matches}/{sample.ocr.count}<span className="block text-slate-500 font-mono">{percent(sample.ocr.exact_match_accuracy)}</span></td>
+          <td className="p-2 font-mono">{percent(sample.ocr.character_error_rate)}</td>
+          <td className="space-y-2 p-2">{sample.ground_truth.map((item, index) => <div key={`gt-${index}`} className="rounded bg-slate-100 border border-slate-200 p-2 font-mono text-slate-800">
             <div>GT {String(item.registration_number)} → {String(item.normalized_registration_number)} ({String(item.validation_status)})</div>
-            <div className="text-slate-400">OCR raw: {String(item.raw_ocr_text ?? (item.matched_prediction_id === null ? 'No detection' : 'Unreadable'))}</div>
-            <div className="text-slate-400">GT validated: {String(item.validated_registration_number ?? 'Not available')} · OCR normalized: {String(item.normalized_ocr_text ?? 'Not available')} · OCR validated: {String(item.predicted_validated_registration_number ?? 'Not available')}</div>
-            <div className="text-slate-400">Status: {String(item.ocr_status)} · edit distance {String(item.ocr_edit_distance)} · plate conf {confidence(item.plate_confidence)} · OCR conf {confidence(item.ocr_confidence)}</div>
-          </div>)}{sample.predictions.map((item, index) => <div key={`pred-${index}`} className={`rounded p-2 font-mono ${item.match_status === 'true_positive' ? 'bg-emerald-950/30 text-emerald-200' : 'bg-rose-950/30 text-rose-200'}`}>
+            <div className="text-slate-600">OCR raw: {String(item.raw_ocr_text ?? (item.matched_prediction_id === null ? 'No detection' : 'Unreadable'))}</div>
+            <div className="text-slate-600">GT validated: {String(item.validated_registration_number ?? 'Not available')} · OCR normalized: {String(item.normalized_ocr_text ?? 'Not available')} · OCR validated: {String(item.predicted_validated_registration_number ?? 'Not available')}</div>
+            <div className="text-slate-600">Status: {String(item.ocr_status)} · edit distance {String(item.ocr_edit_distance)} · plate conf {confidence(item.plate_confidence)} · OCR conf {confidence(item.ocr_confidence)}</div>
+          </div>)}{sample.predictions.map((item, index) => <div key={`pred-${index}`} className={`rounded p-2 font-mono border ${item.match_status === 'true_positive' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
             <div>Detection {String(item.prediction_id ?? index)} · {String(item.match_status)}{item.duplicate_of_prediction_id ? ` of ${String(item.duplicate_of_prediction_id)}` : ''}</div>
-            <div className="text-slate-400">OCR raw: {String(item.raw_ocr_text ?? 'Unreadable')} · normalized: {String(item.normalized_ocr_text ?? 'Not available')}</div>
-            <div className="text-slate-400">Validated registration: {String(item.validated_registration_number ?? 'Not available')} · OCR status: {String(item.ocr_status)}</div>
-            <div className="text-slate-400">Plate confidence: {confidence(item.plate_confidence)} · OCR confidence: {confidence(item.ocr_confidence)}</div>
+            <div className="text-slate-600">OCR raw: {String(item.raw_ocr_text ?? 'Unreadable')} · normalized: {String(item.normalized_ocr_text ?? 'Not available')}</div>
+            <div className="text-slate-600">Validated registration: {String(item.validated_registration_number ?? 'Not available')} · OCR status: {String(item.ocr_status)}</div>
+            <div className="text-slate-600">Plate confidence: {confidence(item.plate_confidence)} · OCR confidence: {confidence(item.ocr_confidence)}</div>
           </div>)}</td>
         </tr>)}</tbody>
       </table>
     </div>
-    <details className="text-[10px] text-slate-500"><summary className="cursor-pointer">Evaluation methodology</summary><pre className="mt-2 whitespace-pre-wrap rounded bg-[#171A24] p-3 text-slate-300 border border-[#222634]">{JSON.stringify(report.methodology, null, 2)}</pre></details>
+    <details className="text-[10px] text-slate-500"><summary className="cursor-pointer font-medium hover:text-slate-700">Evaluation methodology</summary><pre className="mt-2 whitespace-pre-wrap rounded bg-[#F8FAFC] p-3 text-slate-700 border border-[#E2E8F0] font-mono">{JSON.stringify(report.methodology, null, 2)}</pre></details>
   </div>;
 };
 
-const Metric: React.FC<{ label: string; value: number | string }> = ({ label, value }) => <div className="rounded border border-[#222634] bg-[#11131A] p-2"><span className="block text-[9px] uppercase tracking-wider text-slate-400">{label}</span><span className="mt-1 block text-xs font-bold text-white tabular-nums">{value}</span></div>;
+const Metric: React.FC<{ label: string; value: number | string }> = ({ label, value }) => <div className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-2.5 shadow-2xs"><span className="block text-[9px] uppercase tracking-wider text-slate-500 font-medium">{label}</span><span className="mt-1 block text-xs font-bold text-[#0F172A] tabular-nums">{value}</span></div>;

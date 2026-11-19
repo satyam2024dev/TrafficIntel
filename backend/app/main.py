@@ -26,7 +26,9 @@ root_dir = Path(__file__).resolve().parents[2]
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
-from backend.app.core.config import allowed_origins, dev_auth_trusted_origins, settings
+from backend.app.core.config import (
+    allowed_origins, dev_auth_trusted_origins, is_request_origin_allowed, settings,
+)
 from backend.app.database.session import AsyncSessionLocal, get_db, init_db
 from backend.app.api.router import api_router, auth_api_router
 from backend.app.websocket.connection_manager import ws_manager
@@ -84,9 +86,16 @@ origins = allowed_origins()
 if "*" in origins:
     raise RuntimeError("CORS_ORIGINS must contain explicit origins when credentials are enabled.")
 
+dev_origin_regex = (
+    r"^https?://(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:(5173|5174|3000))?$"
+    if not production
+    else None
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins if origins != ["*"] else ["*"],
+    allow_origin_regex=dev_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -98,7 +107,7 @@ async def validate_browser_origin(request: Request, call_next):
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
         origin = request.headers.get("origin")
         fetch_site = request.headers.get("sec-fetch-site", "").lower()
-        if fetch_site == "cross-site" or (origin and origin not in origins):
+        if fetch_site == "cross-site" or (origin and not is_request_origin_allowed(origin)):
             return JSONResponse(status_code=403, content={"detail": "Request origin is not allowed."})
     return await call_next(request)
 

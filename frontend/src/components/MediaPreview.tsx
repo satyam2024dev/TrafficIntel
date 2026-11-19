@@ -50,10 +50,10 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({ media, selectedFile,
     const unavailable = Boolean(src && unavailableArtifacts.has(src));
     const missingMessage = title.includes('ENHANCED') ? 'Enhanced image is unavailable because no enhanced artifact was saved.' : 'Original image could not be loaded from the uploaded file.';
     return (
-    <div className={`overflow-hidden rounded-xl border ${accent ? 'border-blue-500/50' : 'border-[#222634]'} bg-[#11131A]`}>
-      <div className="flex items-center justify-between border-b border-[#222634] px-3 py-2">
-        <span className={`text-[10px] font-bold tracking-[0.16em] ${accent ? 'text-blue-400' : 'text-slate-300'}`}>{title}</span>
-        {accent && <span className="rounded bg-[#171A24] border border-[#2B3040] px-2 py-0.5 text-[9px] font-mono text-blue-400">AI ENHANCED</span>}
+    <div className={`overflow-hidden rounded-xl border ${accent ? 'border-blue-400' : 'border-[#E2E8F0]'} bg-[#0F172A] shadow-sm`}>
+      <div className="flex items-center justify-between border-b border-slate-800 bg-[#0F172A] px-3 py-2">
+        <span className={`text-[10px] font-bold tracking-[0.16em] ${accent ? 'text-blue-400' : 'text-slate-200'}`}>{title}</span>
+        {accent && <span className="rounded bg-blue-950/70 border border-blue-600/40 px-2 py-0.5 text-[9px] font-mono text-blue-300 font-semibold">AI ENHANCED</span>}
       </div>
       {src && !unavailable ? (
         <div className={`relative mx-auto w-full ${media.width && media.height ? '' : 'flex max-h-96 min-h-48 items-center justify-center'}`} style={media.width && media.height ? { aspectRatio: `${media.width} / ${media.height}` } : undefined}>
@@ -69,19 +69,19 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({ media, selectedFile,
           {overlayPlates.map((plate) => <button key={plate.id} type="button" aria-label={`Inspect OCR result ${plate.plate_text}`} onClick={() => onPlateSelect(plate.id)} className="pointer-events-auto absolute z-10 rounded-sm border-2 border-transparent focus:border-amber-300 focus:outline-none" style={{ left: `${(plate.x1 / (media.width || 1)) * 100}%`, top: `${(plate.y1 / (media.height || 1)) * 100}%`, width: `${((plate.x2 - plate.x1) / (media.width || 1)) * 100}%`, height: `${((plate.y2 - plate.y1) / (media.height || 1)) * 100}%` }} />)}
         </div>
       ) : <div role="status" className="flex aspect-video items-center justify-center px-5 text-center text-xs text-slate-400">{unavailable ? missingMessage : title.includes('ENHANCED') ? 'Enhanced image is unavailable because no enhanced artifact was saved.' : originalUnavailable ? 'Original image could not be loaded from the uploaded file.' : 'Preview is unavailable.'}</div>}
-      <div className="border-t border-slate-800 px-3 py-2 text-[10px] text-slate-500">{overlayDetections.length} vehicles · {overlayPlates.length} plate reads</div>
+      <div className="border-t border-slate-800 bg-[#0F172A] px-3 py-2 text-[10px] text-slate-400 font-mono">{overlayDetections.length} vehicles · {overlayPlates.length} plate reads</div>
     </div>
     );
   };
 
   return (
-    <section aria-labelledby="media-preview-heading" className="glass-panel rounded-xl p-4">
+    <section aria-labelledby="media-preview-heading" className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-sm">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          {media.media_type === 'video' ? <Film className="h-4 w-4 text-blue-500" /> : <ImageIcon className="h-4 w-4 text-blue-500" />}
-          <h3 id="media-preview-heading" className="truncate text-sm font-bold text-white">{media.original_filename}</h3>
+          {media.media_type === 'video' ? <Film className="h-4 w-4 text-blue-600" /> : <ImageIcon className="h-4 w-4 text-blue-600" />}
+          <h3 id="media-preview-heading" className="truncate text-sm font-bold text-[#0F172A]">{media.original_filename}</h3>
         </div>
-        <div className="text-[10px] font-mono text-slate-400">{media.width ?? '—'} × {media.height ?? '—'}{media.duration !== null && ` · ${media.duration.toFixed(1)}s`}{media.frame_count !== null && ` · ${media.frame_count} frames`}</div>
+        <div className="text-[10px] font-mono text-slate-500 font-medium">{media.width ?? '—'} × {media.height ?? '—'}{media.duration !== null && ` · ${media.duration.toFixed(1)}s`}{media.frame_count !== null && ` · ${media.frame_count} frames`}</div>
       </div>
 
       {media.media_type === 'image' ? (
@@ -91,14 +91,14 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({ media, selectedFile,
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-xl border border-[#222634] bg-black">
-            <div className="flex items-center justify-between border-b border-[#222634] px-3 py-2"><span className="text-[10px] font-bold tracking-[0.16em] text-slate-300">ORIGINAL VIDEO</span><span className="text-[9px] font-mono text-slate-500">{frames.length} sampled frames processed</span></div>
-            {sourceUrl ? <video ref={videoRef} src={sourceUrl} controls preload="metadata" onLoadedMetadata={() => { if (currentFrame && videoRef.current) videoRef.current.currentTime = currentFrame.timestamp; }} className="max-h-[440px] w-full bg-black" aria-label={`Original video ${media.original_filename}`} /> : <div className="p-10 text-center text-xs text-slate-500">Video preview unavailable.</div>}
+          <div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-black shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-800 bg-[#0F172A] px-3 py-2"><span className="text-[10px] font-bold tracking-[0.16em] text-slate-200">ORIGINAL VIDEO</span><span className="text-[9px] font-mono text-slate-400">{frames.length} sampled frames processed</span></div>
+            {sourceUrl ? <video ref={videoRef} src={sourceUrl} controls preload="metadata" onLoadedMetadata={() => { if (currentFrame && videoRef.current) videoRef.current.currentTime = currentFrame.timestamp; }} className="max-h-[440px] w-full bg-black" aria-label={`Original video ${media.original_filename}`} /> : <div className="p-10 text-center text-xs text-slate-400">Video preview unavailable.</div>}
           </div>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="rounded-xl border border-[#222634] bg-[#11131A] p-3">
-              <p className="mb-2 text-[10px] font-bold tracking-wider text-slate-400">PROCESSED FRAME TIMELINE</p>
-              {frames.length ? <div className="flex flex-wrap gap-2">{frames.map((frame) => <button key={frame.id} type="button" onClick={() => onFrameSelect?.(frame.frame_number)} aria-pressed={frame.frame_number === currentFrame?.frame_number} className={`rounded-lg border px-3 py-2 text-left text-[10px] font-mono tabular-nums ${frame.frame_number === currentFrame?.frame_number ? 'border-blue-500 bg-blue-600/10 text-white font-semibold' : 'border-[#2B3040] bg-[#171A24] text-slate-400 hover:border-slate-500 hover:text-white'}`}>Frame {frame.frame_number}<span className="block text-[9px] opacity-70">{frame.timestamp.toFixed(2)}s</span></button>)}</div> : <p className="py-5 text-center text-xs text-slate-500">No processed frames yet.</p>}
+            <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 shadow-xs">
+              <p className="mb-2 text-[10px] font-bold tracking-wider text-slate-600">PROCESSED FRAME TIMELINE</p>
+              {frames.length ? <div className="flex flex-wrap gap-2">{frames.map((frame) => <button key={frame.id} type="button" onClick={() => onFrameSelect?.(frame.frame_number)} aria-pressed={frame.frame_number === currentFrame?.frame_number} className={`rounded-lg border px-3 py-2 text-left text-[10px] font-mono tabular-nums transition ${frame.frame_number === currentFrame?.frame_number ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold shadow-xs' : 'border-slate-300 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600'}`}>Frame {frame.frame_number}<span className="block text-[9px] opacity-75">{frame.timestamp.toFixed(2)}s</span></button>)}</div> : <p className="py-5 text-center text-xs text-slate-500">No processed frames yet.</p>}
               <p className="mt-3 text-[10px] text-slate-500">Choose a sampled frame to inspect its detections and enhancement.</p>
             </div>
             {stillPane('AI ENHANCED FRAME', currentFrame?.enhanced_frame_url ?? null, currentDetections, currentPlates, true, trajectories)}

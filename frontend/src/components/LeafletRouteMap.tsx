@@ -49,8 +49,8 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
     });
     mapInstanceRef.current = map;
 
-    // Dark Tile Layer (CartoDB DarkMatter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Daylight Tile Layer (CartoDB Voyager)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
     }).addTo(map);
@@ -60,8 +60,8 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
       L.divIcon({
         className: 'custom-camera-marker',
         html: `
-          <div style="background: #0f172a; border: 2px solid #06b6d4; border-radius: 6px; padding: 2px 6px; font-family: monospace; font-size: 11px; font-weight: bold; color: #38bdf8; box-shadow: 0 0 10px rgba(6,182,212,0.5); display: flex; align-items: center; gap: 4px;">
-            <span style="display: inline-block; width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></span>
+          <div style="background: #ffffff; border: 2px solid #2563eb; border-radius: 6px; padding: 2px 6px; font-family: monospace; font-size: 11px; font-weight: bold; color: #1e3a8a; box-shadow: 0 2px 8px rgba(37,99,235,0.25); display: flex; align-items: center; gap: 5px;">
+            <span style="display: inline-block; width: 6px; height: 6px; background: #059669; border-radius: 50%;"></span>
             ${escapeHtml(id)}
           </div>
         `,
@@ -76,8 +76,8 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
         .bindPopup(`
           <div style="color: #0f172a; font-family: sans-serif; font-size: 12px; padding: 4px;">
             <strong>Camera ${escapeHtml(cam.id)}: ${escapeHtml(cam.name)}</strong><br/>
-            <span>Weather: ${escapeHtml(cam.weather.toUpperCase())}</span><br/>
-            <span>Lat: ${cam.latitude.toFixed(4)}, Lng: ${cam.longitude.toFixed(4)}</span>
+            <span style="color: #475569;">Weather: ${escapeHtml(cam.weather.toUpperCase())}</span><br/>
+            <span style="color: #64748b;">Lat: ${cam.latitude.toFixed(4)}, Lng: ${cam.longitude.toFixed(4)}</span>
           </div>
         `);
     });
@@ -86,19 +86,19 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
     const corridorCoords: [number, number][] = routePoints ?? [];
 
     if (corridorCoords.length >= 2) {
-      // Glow background line
+      // Background glow line
       L.polyline(corridorCoords, {
-        color: '#06b6d4',
+        color: '#2563eb',
         weight: 6,
-        opacity: 0.35,
+        opacity: 0.25,
       }).addTo(map);
 
       // Sharp central line
       L.polyline(corridorCoords, {
-        color: '#38bdf8',
+        color: '#1d4ed8',
         weight: 3,
-        opacity: 0.9,
-        dashArray: '4, 8',
+        opacity: 0.95,
+        dashArray: '5, 8',
       }).addTo(map);
     }
 
@@ -115,12 +115,12 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
       const vehicleIcon = L.divIcon({
         className: 'custom-vehicle-marker',
         html: `
-          <div style="background: #e11d48; border: 2px solid #ffffff; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 12px #f43f5e; display: flex; align-items: center; justify-content: center;">
+          <div style="background: #e11d48; border: 2px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 2px 8px rgba(225,29,72,0.4); display: flex; align-items: center; justify-content: center;">
             <div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div>
           </div>
         `,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
       });
 
       L.marker([activeVehicle.lat, activeVehicle.lng], { icon: vehicleIcon })
@@ -143,9 +143,9 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
   }, [center, zoom, cameras, routePoints, activeVehicle]);
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-[#222634] shadow-sm">
+    <div className="relative rounded-xl overflow-hidden border border-[#E2E8F0] shadow-sm">
       <div ref={mapContainerRef} style={{ height: height, width: '100%' }} />
-      <div className="absolute top-3 right-3 z-[1000] bg-[#11131A]/95 border border-[#222634] rounded px-2.5 py-1 text-[11px] font-mono text-blue-400 backdrop-blur-md">
+      <div className="absolute top-3 right-3 z-[1000] bg-white/95 border border-[#E2E8F0] rounded px-2.5 py-1 text-[11px] font-mono text-blue-600 shadow-sm backdrop-blur-md font-semibold">
         {routePoints?.length ? 'Persisted route coordinates' : cameras.length ? 'Configured camera locations' : 'No geographic points available'}
       </div>
     </div>

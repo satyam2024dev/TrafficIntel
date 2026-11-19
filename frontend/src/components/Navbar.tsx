@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, RotateCcw, Radio, Bell, ShieldCheck, Activity, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTrafficData } from '../hooks/useTrafficData';
@@ -60,31 +60,31 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
   };
 
   return (
-    <header className="h-16 border-b border-[#1F2330] bg-[#0D0F16] sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between">
+    <header className="h-16 border-b border-[#E2E8F0] bg-white sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between shadow-sm">
       {/* Brand & Tactical Label */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-blue-950/80 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-sm">
-            <Activity className="w-5 h-5 text-blue-500" />
+          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-[#00A8C6] shadow-sm">
+            <Activity className="w-5 h-5 text-[#00A8C6]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm lg:text-base tracking-tight text-white">
-                TRAFFIC<span className="text-blue-500">INTEL</span>
+              <span className="font-extrabold text-sm lg:text-base tracking-tight text-[#0F172A]">
+                TRAFFIC<span className="text-[#00A8C6]">INTEL</span>
               </span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#171A24] text-blue-400 border border-[#2B3040] font-bold hidden sm:inline-block">
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-teal-50 text-[#0891B2] border border-teal-200 font-bold hidden sm:inline-block">
                 ANPR v1.0
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 hidden md:block">
+            <p className="text-[10px] text-slate-500 hidden md:block">
               Route Tracking & All-Weather Plate Recognition
             </p>
           </div>
         </div>
 
         {/* DEMO MODE Academic Integrity Badge */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono">
-          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-mono">
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
           <span className="font-semibold">SIMULATION DATA IS SEPARATE</span>
         </div>
       </div>
@@ -93,7 +93,7 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Simulation Control Group */}
         {props.role === 'admin' && (
-          <div className="flex items-center bg-[#11131A] border border-[#222634] rounded-lg p-1 gap-1 shadow-sm">
+          <div className="flex items-center bg-slate-100/90 border border-slate-200 rounded-lg p-1 gap-1 shadow-sm">
             <button
               onClick={handleStart}
               disabled={loading !== null || (isSimRunning && !isSimPaused)}
@@ -101,7 +101,7 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 isSimRunning && !isSimPaused
                   ? 'bg-emerald-600 text-white shadow-sm font-bold'
-                  : 'text-slate-300 hover:text-emerald-400 hover:bg-[#171A24]'
+                  : 'text-slate-600 hover:text-emerald-700 hover:bg-white'
               }`}
             >
               <Play className="w-3.5 h-3.5 fill-current" />
@@ -114,8 +114,8 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
               title="Pause Simulation"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 isSimPaused
-                  ? 'bg-amber-600 text-white shadow-sm font-bold'
-                  : 'text-slate-300 hover:text-amber-400 hover:bg-[#171A24]'
+                  ? 'bg-amber-500 text-white shadow-sm font-bold'
+                  : 'text-slate-600 hover:text-amber-700 hover:bg-white'
               }`}
             >
               <Pause className="w-3.5 h-3.5 fill-current" />
@@ -126,7 +126,7 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
               onClick={handleReset}
               disabled={loading !== null}
               title="Reset Simulation State"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-[#171A24] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-white transition-all"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">RESET</span>
@@ -138,14 +138,14 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
         <div
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono border ${
             wsConnected
-              ? 'bg-emerald-950/40 border-emerald-800/40 text-emerald-400'
-              : 'bg-rose-950/40 border-rose-800/40 text-rose-400'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-rose-50 border-rose-200 text-rose-700'
           }`}
           title={wsConnected ? 'WebSocket Live Stream Active' : 'WebSocket Reconnecting...'}
         >
           <span
             className={`w-2 h-2 rounded-full ${
-              wsConnected ? 'bg-emerald-400 animate-ping' : 'bg-rose-500'
+              wsConnected ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'
             }`}
           />
           <Radio className="w-3 h-3" />
@@ -155,22 +155,22 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
         {/* Alerts Bell Link */}
         <Link
           to="/alerts"
-          className="relative p-2 rounded-lg bg-[#11131A] border border-[#222634] text-slate-300 hover:text-white hover:border-[#2B3040] transition shadow-sm"
+          className="relative p-2 rounded-lg bg-white border border-[#E2E8F0] text-slate-600 hover:text-blue-600 hover:border-slate-300 transition shadow-sm"
           title="Active Alerts"
         >
           <Bell className="w-4 h-4" />
           {activeAlertsCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-[10px] font-mono font-bold text-white shadow-sm">
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-600 text-[10px] font-mono font-bold text-white shadow-sm">
               {activeAlertsCount}
             </span>
           )}
         </Link>
-        <span className="hidden md:inline-flex items-center text-xs font-mono px-2.5 py-1 rounded bg-[#171A24] border border-[#2B3040] text-slate-300">
+        <span className="hidden md:inline-flex items-center text-xs font-mono px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-slate-700 font-medium">
           {props.username} • {props.role}
         </span>
         <button
           onClick={() => void props.onLogout?.()}
-          className="rounded-lg border border-[#222634] bg-[#11131A] p-2 text-slate-400 hover:text-white hover:border-[#2B3040] transition"
+          className="rounded-lg border border-[#E2E8F0] bg-white p-2 text-slate-500 hover:text-rose-600 hover:border-slate-300 transition shadow-sm"
           title="Sign out"
           aria-label="Sign out"
         >

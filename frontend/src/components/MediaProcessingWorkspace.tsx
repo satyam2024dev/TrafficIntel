@@ -232,15 +232,15 @@ export const MediaProcessingWorkspace: React.FC = () => {
         onStart={() => { void startProcessing(); }}
         onReset={resetWorkspace}
       />
-      {(media?.media_type === 'video' || (selectedFile && mediaTypeForFile(selectedFile) === 'video')) && <div className="glass-panel flex flex-wrap items-end gap-3 rounded-xl border border-[#222634] p-4">
-        <label className="min-w-[250px] flex-1 text-xs text-slate-300">Camera used to record this video
-          <select value={routeCameraId} onChange={(event) => setRouteCameraId(event.target.value)} disabled={preparing} className="mt-1 block w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-3 py-2 text-xs text-white">
+      {(media?.media_type === 'video' || (selectedFile && mediaTypeForFile(selectedFile) === 'video')) && <div className="bg-white flex flex-wrap items-end gap-3 rounded-xl border border-[#E2E8F0] p-4 shadow-sm">
+        <label className="min-w-[250px] flex-1 text-xs text-slate-700 font-medium">Camera used to record this video
+          <select value={routeCameraId} onChange={(event) => setRouteCameraId(event.target.value)} disabled={preparing} className="mt-1 block w-full rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2 text-xs text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500">
             <option value="">No camera selected (GPS import only)</option>
             {cameras.map((camera) => <option key={camera.id} value={camera.id}>{camera.id} · {camera.name}{camera.calibration_homography ? ' · calibrated' : ' · uncalibrated'}</option>)}
           </select>
         </label>
         <p className="max-w-xl text-[10px] text-slate-500">Calibrated mapping is used only when its recorded image dimensions match the uploaded video. An uncalibrated camera supplies no geographic route points; actual GPS observations can be attached to assigned track IDs.</p>
-        {cameraLoadError && <p role="alert" className="w-full text-xs text-rose-300">Camera list unavailable: {cameraLoadError}</p>}
+        {cameraLoadError && <p role="alert" className="w-full text-xs text-rose-700 font-medium">Camera list unavailable: {cameraLoadError}</p>}
       </div>}
       {(preparing || job || workspaceError) && <ProcessingProgress job={job} uploading={preparing} uploadProgress={uploadProgress} error={workspaceError} onRetry={() => { void startProcessing(); }} />}
       {previewMedia && <MediaPreview media={previewMedia} selectedFile={selectedFile} frames={results?.frames ?? []} detections={results?.detections ?? []} plates={results?.plate_results ?? []} selectedPlateId={selectedPlateId} onPlateSelect={setSelectedPlateId} selectedFrameNumber={selectedFrameNumber} onFrameSelect={setSelectedFrameNumber} trajectories={trackTrajectories} selectedTrackId={selectedTrackId} />}
@@ -249,7 +249,7 @@ export const MediaProcessingWorkspace: React.FC = () => {
       {results?.status === 'completed' && results.processing_metadata.mode === 'REAL INFERENCE' && media && job && (
         results.processing_metadata.plate_detector === 'REAL YOLO PLATE DETECTOR' && String(results.processing_metadata.ocr_engine ?? '').toLowerCase().includes('paddleocr')
           ? <ANPREvaluationPanel key={job.id} jobId={job.id} media={media} frames={results.frames} selectedFrameNumber={selectedFrameNumber} onFrameSelect={setSelectedFrameNumber} />
-          : <p role="status" className="rounded-lg border border-amber-900/60 bg-amber-950/20 p-3 text-xs text-amber-200">Accuracy evaluation is available for real YOLO plate detector and PaddleOCR results. This job used {String(results.processing_metadata.plate_detector ?? 'an unavailable plate detector')} / {String(results.processing_metadata.ocr_engine ?? 'an unavailable OCR provider')}; run a new real-model job before evaluating.</p>
+          : <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 font-medium">Accuracy evaluation is available for real YOLO plate detector and PaddleOCR results. This job used {String(results.processing_metadata.plate_detector ?? 'an unavailable plate detector')} / {String(results.processing_metadata.ocr_engine ?? 'an unavailable OCR provider')}; run a new real-model job before evaluating.</p>
       )}
       <ProcessingHistory items={history} loading={historyLoading} error={historyError} selectedJobId={job?.id ?? null} onSelect={(item) => { void selectHistoryItem(item); }} onRefresh={() => { void refreshHistory(); }} />
     </div>

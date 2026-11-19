@@ -95,24 +95,24 @@ export const Alerts: React.FC = () => {
     }
   };
 
-  const card = 'glass-panel rounded-xl border border-[#222634] p-5 shadow-sm';
+  const card = 'bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm';
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="flex items-center gap-2 text-xl font-bold text-white tracking-tight">
-          <AlertTriangle className="text-rose-400" />
-          <span>Traffic alerts</span>
+        <h1 className="flex items-center gap-2.5 text-xl font-extrabold text-slate-900 tracking-tight">
+          <AlertTriangle className="text-[#EF4444] w-6 h-6" />
+          <span>Traffic & Sensor Alerts</span>
         </h1>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-slate-500">
           Alerts generated from persisted inference and camera health events. Configure rules below; seeded legacy alerts are identified by their source.
         </p>
       </header>
 
-      {error && <p role="alert" className="rounded-lg border border-rose-800 bg-rose-950/30 p-3 text-sm text-rose-200">{error}</p>}
+      {error && <p role="alert" className="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 shadow-sm font-medium">{error}</p>}
 
       <section className={`${card} flex flex-wrap items-end gap-3`}>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs text-slate-600 font-semibold">
           State
           <select
             value={resolved}
@@ -120,19 +120,19 @@ export const Alerts: React.FC = () => {
               setResolved(e.target.value);
               setOffset(0);
             }}
-            className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+            className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
           >
             <option value="false">Active</option>
             <option value="true">Resolved</option>
             <option value="">All</option>
           </select>
         </label>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs text-slate-600 font-semibold">
           Severity
           <select
             value={severity}
             onChange={(e) => setSeverity(e.target.value)}
-            className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+            className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
           >
             <option value="">All</option>
             {['info', 'warning', 'medium', 'high', 'critical'].map((x) => (
@@ -140,12 +140,12 @@ export const Alerts: React.FC = () => {
             ))}
           </select>
         </label>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs text-slate-600 font-semibold">
           Camera
           <select
             value={camera}
             onChange={(e) => setCamera(e.target.value)}
-            className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+            className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
           >
             <option value="">All cameras</option>
             {cameras.map((c) => (
@@ -155,19 +155,19 @@ export const Alerts: React.FC = () => {
             ))}
           </select>
         </label>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs text-slate-600 font-semibold">
           Acknowledgement
           <select
             value={ack}
             onChange={(e) => setAck(e.target.value)}
-            className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+            className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
           >
             <option value="">All</option>
             <option value="false">Unacknowledged</option>
             <option value="true">Acknowledged</option>
           </select>
         </label>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs text-slate-600 font-semibold">
           From
           <input
             type="date"
@@ -176,10 +176,10 @@ export const Alerts: React.FC = () => {
               setStart(e.target.value);
               setOffset(0);
             }}
-            className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-mono"
+            className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
           />
         </label>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs text-slate-600 font-semibold">
           To
           <input
             type="date"
@@ -188,7 +188,7 @@ export const Alerts: React.FC = () => {
               setEnd(e.target.value);
               setOffset(0);
             }}
-            className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-mono"
+            className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
           />
         </label>
         <a
@@ -200,32 +200,37 @@ export const Alerts: React.FC = () => {
             ...(resolved !== '' ? { resolved: resolved === 'true' } : {}),
             ...(ack !== '' ? { acknowledged: ack === 'true' } : {}),
           })}
-          className="rounded-lg border border-[#2B3040] bg-[#171A24] px-3.5 py-2 text-xs font-semibold text-blue-400 hover:text-blue-300 hover:border-blue-500/50 transition"
+          className="rounded-xl bg-[#00A8C6] hover:bg-[#0090AA] px-4 py-2 text-xs font-semibold text-white shadow-sm transition"
         >
           Export CSV
         </a>
       </section>
 
       <section className={card}>
-        <h2 className="mb-3 font-semibold text-white">Alert history ({page?.total ?? 0})</h2>
-        <div className="space-y-2">
+        <h2 className="mb-3 font-bold text-base text-slate-900">Alert history ({page?.total ?? 0})</h2>
+        <div className="space-y-2.5">
           {page?.items.map((a) => (
             <article
               key={a.id}
-              className="flex flex-col gap-3 rounded-lg border border-[#222634] bg-[#171A24]/60 p-3 md:flex-row md:items-center md:justify-between"
+              className="flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-[#F8FAFC] p-3.5 md:flex-row md:items-center md:justify-between shadow-sm hover:bg-white transition"
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <b className="text-sm text-white">{a.alert_type.replace(/_/g, ' ')}</b>
-                  <span className="rounded bg-[#171A24] border border-[#2B3040] px-2 py-0.5 text-[10px] uppercase font-mono text-amber-400">
+                  <b className="text-sm text-slate-900">{a.alert_type.replace(/_/g, ' ')}</b>
+                  <span className={`rounded-md border px-2 py-0.5 text-[10px] uppercase font-mono font-bold ${
+                    a.severity === 'critical' ? 'bg-rose-50 border-rose-300 text-[#EF4444]' :
+                    a.severity === 'high' ? 'bg-orange-50 border-orange-300 text-orange-700' :
+                    a.severity === 'warning' ? 'bg-amber-50 border-amber-300 text-[#F59E0B]' :
+                    'bg-teal-50 border-teal-300 text-[#00A8C6]'
+                  }`}>
                     {a.severity}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <span className="text-[10px] text-slate-500 font-mono">
                     {a.source ?? 'legacy'} · {new Date(a.created_at).toLocaleString()}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-200">{a.message}</p>
-                <p className="mt-1 text-[10px] text-slate-400 font-mono">
+                <p className="mt-1 text-xs text-slate-700 font-medium">{a.message}</p>
+                <p className="mt-1 text-[10px] text-slate-500 font-mono">
                   Camera {a.camera_id ?? '—'} · Track {a.tracking_id ?? '—'} · Plate {a.registration_number ?? '—'} · {a.acknowledged_at ? 'Acknowledged' : 'Not acknowledged'} · {a.is_resolved ? 'Resolved' : 'Active'}
                 </p>
               </div>
@@ -234,7 +239,7 @@ export const Alerts: React.FC = () => {
                   <button
                     disabled={busy === a.id}
                     onClick={() => void act(a, 'acknowledge')}
-                    className="inline-flex items-center gap-1 rounded-lg border border-[#2B3040] bg-[#171A24] px-2.5 py-1.5 text-xs text-blue-400 hover:text-blue-300 transition"
+                    className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-[#00A8C6] hover:text-[#0090AA] hover:bg-slate-50 shadow-sm transition font-semibold"
                   >
                     <Check size={13} />
                     Acknowledge
@@ -244,7 +249,7 @@ export const Alerts: React.FC = () => {
                   <button
                     disabled={busy === a.id}
                     onClick={() => void act(a, 'resolve')}
-                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-800 bg-emerald-950/40 px-2.5 py-1.5 text-xs text-emerald-400 hover:bg-emerald-900/50 transition"
+                    className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100 shadow-sm transition font-bold"
                   >
                     <CheckCircle2 size={13} />
                     Resolve
@@ -259,14 +264,14 @@ export const Alerts: React.FC = () => {
           <button
             disabled={!page || offset === 0}
             onClick={() => setOffset(Math.max(0, offset - 50))}
-            className="rounded-lg border border-[#2B3040] bg-[#171A24] px-3 py-1.5 text-xs text-slate-300 hover:text-white disabled:opacity-40 transition"
+            className="rounded-xl border border-slate-300 bg-white px-3.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-[#00A8C6] shadow-sm disabled:opacity-40 transition font-semibold"
           >
             Previous
           </button>
           <button
             disabled={!page || offset + 50 >= page.total}
             onClick={() => setOffset(offset + 50)}
-            className="rounded-lg border border-[#2B3040] bg-[#171A24] px-3 py-1.5 text-xs text-slate-300 hover:text-white disabled:opacity-40 transition"
+            className="rounded-xl border border-slate-300 bg-white px-3.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-[#00A8C6] shadow-sm disabled:opacity-40 transition font-semibold"
           >
             Next
           </button>
@@ -274,24 +279,24 @@ export const Alerts: React.FC = () => {
       </section>
 
       <section className={card}>
-        <h2 className="mb-3 font-semibold text-white">Configure alert rule</h2>
+        <h2 className="mb-3 font-bold text-base text-slate-900">Configure alert rule</h2>
         <form onSubmit={createRule} className="flex flex-wrap items-end gap-3">
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-slate-600 font-semibold">
             Name
             <input
               required
               maxLength={120}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+              className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
             />
           </label>
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-slate-600 font-semibold">
             Type
             <select
               value={ruleType}
               onChange={(e) => setRuleType(e.target.value as AlertRuleType)}
-              className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+              className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
             >
               {types.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -300,12 +305,12 @@ export const Alerts: React.FC = () => {
               ))}
             </select>
           </label>
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-slate-600 font-semibold">
             Severity
             <select
               value={ruleSeverity}
               onChange={(e) => setRuleSeverity(e.target.value)}
-              className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-medium"
+              className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
             >
               {['info', 'warning', 'medium', 'high', 'critical'].map((x) => (
                 <option key={x}>{x}</option>
@@ -313,19 +318,19 @@ export const Alerts: React.FC = () => {
             </select>
           </label>
           {ruleType === 'registration_match' && (
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600 font-semibold">
               Indian registration
               <input
                 required
                 value={registration}
                 onChange={(e) => setRegistration(e.target.value)}
                 placeholder="KA01AB1234"
-                className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-mono"
+                className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
               />
             </label>
           )}
           {ruleType === 'low_confidence_ocr' && (
-            <label className="text-xs text-slate-400">
+            <label className="text-xs text-slate-600 font-semibold">
               OCR threshold (0–1)
               <input
                 required
@@ -335,13 +340,13 @@ export const Alerts: React.FC = () => {
                 step="0.01"
                 value={threshold}
                 onChange={(e) => setThreshold(e.target.value)}
-                className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-mono"
+                className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
               />
             </label>
           )}
           {ruleType === 'repeated_detection' && (
             <>
-              <label className="text-xs text-slate-400">
+              <label className="text-xs text-slate-600 font-semibold">
                 Occurrences
                 <input
                   type="number"
@@ -349,10 +354,10 @@ export const Alerts: React.FC = () => {
                   max="10000"
                   value={occurrences}
                   onChange={(e) => setOccurrences(e.target.value)}
-                  className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-mono"
+                  className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
                 />
               </label>
-              <label className="text-xs text-slate-400">
+              <label className="text-xs text-slate-600 font-semibold">
                 Window seconds
                 <input
                   type="number"
@@ -360,12 +365,12 @@ export const Alerts: React.FC = () => {
                   max="86400"
                   value={windowSeconds}
                   onChange={(e) => setWindowSeconds(e.target.value)}
-                  className="mt-1 block rounded-lg border border-[#2B3040] bg-[#171A24] p-2 text-white font-mono"
+                  className="mt-1.5 block rounded-xl border border-slate-300 bg-[#F8FAFC] px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#00A8C6] shadow-sm text-xs"
                 />
               </label>
             </>
           )}
-          <button className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition">
+          <button className="inline-flex items-center gap-1.5 rounded-xl bg-[#00A8C6] hover:bg-[#0090AA] px-4 py-2 text-xs font-semibold text-white shadow-sm transition">
             <Plus size={14} />
             Add rule
           </button>
@@ -373,11 +378,11 @@ export const Alerts: React.FC = () => {
 
         <div className="mt-4 space-y-2">
           {rules.map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-lg border border-[#222634] bg-[#171A24]/60 px-3 py-2 text-xs">
-              <span className="text-slate-200 font-mono">
+            <div key={r.id} className="flex items-center justify-between rounded-xl border border-slate-200/90 bg-[#F8FAFC] px-3.5 py-2.5 text-xs shadow-sm">
+              <span className="text-slate-800 font-mono font-medium">
                 {r.name} · {r.rule_type.replace(/_/g, ' ')} · {r.severity} · {r.enabled ? 'Enabled' : 'Disabled'}
               </span>
-              <div className="flex items-center gap-3 font-medium">
+              <div className="flex items-center gap-3 font-semibold">
                 <button
                   onClick={async () => {
                     try {
@@ -387,7 +392,7 @@ export const Alerts: React.FC = () => {
                       setError(e?.response?.data?.detail ?? 'Could not update rule.');
                     }
                   }}
-                  className="text-blue-400 hover:text-blue-300 transition"
+                  className="text-[#00A8C6] hover:text-[#0090AA] transition"
                 >
                   {r.enabled ? 'Disable' : 'Enable'}
                 </button>
@@ -400,7 +405,7 @@ export const Alerts: React.FC = () => {
                       setError(e?.response?.data?.detail ?? 'Could not delete rule.');
                     }
                   }}
-                  className="text-rose-400 hover:text-rose-300 transition"
+                  className="text-rose-600 hover:text-rose-700 transition"
                   aria-label={`Delete ${r.name}`}
                 >
                   <Trash2 size={14} />
