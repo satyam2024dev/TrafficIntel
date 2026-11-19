@@ -112,6 +112,8 @@ def _open_capture(stream_type: str, device_index: int | None, stream_url: str | 
         except Exception:
             # Do not include the URL or native exception text in a log/response.
             raise RuntimeError("OpenCV could not open the configured RTSP source.") from None
+    elif stream_type == "file" and stream_url:
+        capture = cv2.VideoCapture(stream_url)
     else:
         raise RuntimeError("Camera source is not configured.")
     buffer_property = getattr(cv2, "CAP_PROP_BUFFERSIZE", None)
@@ -199,6 +201,8 @@ class LiveCameraManager:
                     except (asyncio.CancelledError, asyncio.TimeoutError):
                         pass
             session.capture = None
+            session.latest_jpeg = None
+            session.active_track_ids.clear()
             session.status = "stopped"
             session.error = None
         else:
@@ -407,6 +411,7 @@ class LiveCameraManager:
                         frame_number += 1
                         now_mono = time.monotonic()
                         if now_mono - last_processed < frame_period:
+                            await asyncio.sleep(0.005)
                             continue
                         last_processed = now_mono
                         media_timestamp = now_mono - started
@@ -445,6 +450,8 @@ class LiveCameraManager:
                 except Exception:
                     pass
             session.capture = None
+            session.latest_jpeg = None
+            session.active_track_ids.clear()
             if session.stop_event.is_set():
                 await self._persist_status(session, "stopped", None)
 

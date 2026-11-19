@@ -40,7 +40,11 @@ def plate_ocr_variants(crop: np.ndarray, weather_condition: str = "clear") -> li
         operations.append("light_denoise")
 
     # A mild unsharp mask is useful for blurred crops, but is skipped on sharp text.
-    if float(cv2.Laplacian(gray, cv2.CV_64F).var()) < 110.0:
+    try:
+        laplacian_var = float(cv2.Laplacian(gray, cv2.CV_32F).var())
+    except Exception:
+        laplacian_var = 120.0
+    if laplacian_var < 110.0:
         blurred = cv2.GaussianBlur(gray, (0, 0), 1.0)
         gray = cv2.addWeighted(gray, 1.35, blurred, -0.35, 0)
         operations.append("mild_sharpen")

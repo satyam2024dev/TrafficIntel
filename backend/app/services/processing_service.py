@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import re
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path, PurePath, PureWindowsPath
@@ -23,6 +24,94 @@ VIDEO_MIMES = {".mp4": "video/mp4", ".avi": "video/x-msvideo", ".mov": "video/qu
 CHUNK_SIZE = 1024 * 1024
 logger = logging.getLogger(__name__)
 _processing_semaphore = asyncio.Semaphore(settings.MEDIA_PROCESSING_CONCURRENCY)
+_pipeline_cache: dict[tuple[Any, ...], Any] = {}
+_pipeline_cache_lock = threading.Lock()
+
+
+def get_cached_media_pipeline(
+    demo_mode: bool,
+    yolo_model_path: str,
+    plate_model_path: str,
+    sample_every: int,
+    tracker_lost_track_buffer: int,
+    tracker_minimum_consecutive_frames: int,
+    tracker_minimum_iou_threshold: float,
+    yolo_image_size: int = 640,
+    max_processing_width: int = 1280,
+) -> Any:
+    """Return a cached MediaPipeline instance or create and cache a new one thread-safely."""
+    from ai_engine.pipeline.media_pipeline import MediaPipeline as PipelineCls
+
+    # If MediaPipeline was patched by a mock or subclass in tests, instantiate directly
+    if getattr(PipelineCls, "__module__", "") != "ai_engine.pipeline.media_pipeline":
+        try:
+            return PipelineCls(
+                demo_mode=demo_mode,
+                yolo_model_path=yolo_model_path,
+                sample_every=sample_every,
+                plate_model_path=plate_model_path,
+                tracker_lost_track_buffer=tracker_lost_track_buffer,
+                tracker_minimum_consecutive_frames=tracker_minimum_consecutive_frames,
+                tracker_minimum_iou_threshold=tracker_minimum_iou_threshold,
+                yolo_image_size=yolo_image_size,
+                max_processing_width=max_processing_width,
+            )
+        except TypeError:
+            try:
+                return PipelineCls(
+                    demo_mode=demo_mode,
+                    yolo_model_path=yolo_model_path,
+                    sample_every=sample_every,
+                    plate_model_path=plate_model_path,
+                    tracker_lost_track_buffer=tracker_lost_track_buffer,
+                    tracker_minimum_consecutive_frames=tracker_minimum_consecutive_frames,
+                    tracker_minimum_iou_threshold=tracker_minimum_iou_threshold,
+                    yolo_image_size=yolo_image_size,
+                )
+            except TypeError:
+                return PipelineCls(
+                    demo_mode=demo_mode,
+                    yolo_model_path=yolo_model_path,
+                    sample_every=sample_every,
+                    plate_model_path=plate_model_path,
+                    tracker_lost_track_buffer=tracker_lost_track_buffer,
+                    tracker_minimum_consecutive_frames=tracker_minimum_consecutive_frames,
+                    tracker_minimum_iou_threshold=tracker_minimum_iou_threshold,
+                )
+
+    cache_key = (
+        demo_mode,
+        yolo_model_path,
+        plate_model_path,
+        sample_every,
+        tracker_lost_track_buffer,
+        tracker_minimum_consecutive_frames,
+        tracker_minimum_iou_threshold,
+        yolo_image_size,
+        max_processing_width,
+    )
+    with _pipeline_cache_lock:
+        pipeline = _pipeline_cache.get(cache_key)
+        if pipeline is None:
+            pipeline = PipelineCls(
+                demo_mode=demo_mode,
+                yolo_model_path=yolo_model_path,
+                sample_every=sample_every,
+                plate_model_path=plate_model_path,
+                tracker_lost_track_buffer=tracker_lost_track_buffer,
+                tracker_minimum_consecutive_frames=tracker_minimum_consecutive_frames,
+                tracker_minimum_iou_threshold=tracker_minimum_iou_threshold,
+                yolo_image_size=yolo_image_size,
+                max_processing_width=max_processing_width,
+            )
+            _pipeline_cache[cache_key] = pipeline
+        return pipeline
+
+
+def clear_media_pipeline_cache() -> None:
+    """Clear all cached pipeline instances."""
+    with _pipeline_cache_lock:
+        _pipeline_cache.clear()
 
 
 def storage_root() -> Path:
@@ -339,21 +428,23 @@ async def _run_processing_job(job_id: int) -> None:
         await db.commit()
 
         try:
-            from ai_engine.pipeline.media_pipeline import MediaPipeline
-
             pipeline = await asyncio.to_thread(
-                MediaPipeline,
+                get_cached_media_pipeline,
                 demo_mode=settings.MEDIA_DEMO_MODE,
                 yolo_model_path=settings.YOLO_MODEL_PATH,
-                sample_every=settings.PROCESS_EVERY_N_FRAMES,
                 plate_model_path=settings.PLATE_MODEL_PATH,
+                sample_every=settings.PROCESS_EVERY_N_FRAMES,
                 tracker_lost_track_buffer=settings.TRACKER_LOST_TRACK_BUFFER,
                 tracker_minimum_consecutive_frames=settings.TRACKER_MINIMUM_CONSECUTIVE_FRAMES,
                 tracker_minimum_iou_threshold=settings.TRACKER_MINIMUM_IOU_THRESHOLD,
+                yolo_image_size=settings.YOLO_IMAGE_SIZE,
+                max_processing_width=settings.MAX_PROCESSING_WIDTH,
             )
             iterator = pipeline.iter_process(media.file_path, media.media_type)
             processed_count = 0
             storage = storage_root()
+            media_type = media.media_type
+            media_frame_count = media.frame_count
             while True:
                 batch = await asyncio.to_thread(_next_or_none, iterator)
                 if batch is None:
@@ -362,7 +453,7 @@ async def _run_processing_job(job_id: int) -> None:
                 frame_no = batch["frame_number"]
                 frame_path = None
                 enhanced_path = None
-                if media.media_type == "image":
+                if media_type == "image":
                     enhanced_path = storage / "processed" / f"job-{job_id}-enhanced.jpg"
                     if not await asyncio.to_thread(cv2_write, str(enhanced_path), batch["enhanced_frame"]):
                         raise RuntimeError("Could not save enhanced image artifact.")
@@ -379,8 +470,8 @@ async def _run_processing_job(job_id: int) -> None:
                     x1, y1, x2, y2 = result["bbox"]
                     row = MediaDetection(
                         processing_job_id=job.id,
-                        frame_number=frame_no if media.media_type == "video" else None,
-                        timestamp=batch["timestamp"] if media.media_type == "video" else None,
+                        frame_number=frame_no if media_type == "video" else None,
+                        timestamp=batch["timestamp"] if media_type == "video" else None,
                         object_type=result["object_type"],
                         track_id=result["track_id"],
                         confidence=result["confidence"], x1=x1, y1=y1, x2=x2, y2=y2,
@@ -394,7 +485,7 @@ async def _run_processing_job(job_id: int) -> None:
                 # Calibration estimates use the bottom-center (ground-contact)
                 # of each detection box, and only when this camera calibration
                 # exactly matches the uploaded video's pixel dimensions.
-                if media.media_type == "video" and can_project_geographic_routes and camera is not None:
+                if media_type == "video" and can_project_geographic_routes and camera is not None:
                     from ai_engine.geospatial.homography import image_to_geographic
                     for detection_row in detection_rows:
                         try:
@@ -434,8 +525,8 @@ async def _run_processing_job(job_id: int) -> None:
                             plate_row = MediaPlateResult(
                                 processing_job_id=job.id,
                                 detection_id=detection.id,
-                                frame_number=frame_no if media.media_type == "video" else None,
-                                timestamp=batch["timestamp"] if media.media_type == "video" else None,
+                                frame_number=frame_no if media_type == "video" else None,
+                                timestamp=batch["timestamp"] if media_type == "video" else None,
                                 plate_text=plate["plate_text"],
                                 raw_ocr_text=plate.get("raw_ocr_text"),
                                 normalized_ocr_text=plate.get("normalized_ocr_text"),
@@ -478,12 +569,25 @@ async def _run_processing_job(job_id: int) -> None:
                     processed=True,
                 ))
                 job.current_stage = f"Processed frame {frame_no}: detection, plate localization, and OCR"
-                if media.frame_count:
-                    job.progress = min(95.0, 5.0 + 90.0 * (frame_no / media.frame_count))
+                if media_frame_count:
+                    job.progress = min(95.0, 5.0 + 90.0 * (frame_no / media_frame_count))
                 else:
                     job.progress = min(95.0, 5.0 + processed_count)
                 job.processing_metadata = {**(job.processing_metadata or {}), **batch["metadata"]}
                 await db.commit()
+
+                # Periodic database expunge & GC cleanup to keep process RAM flat
+                if processed_count % 15 == 0:
+                    import gc
+                    await db.flush()
+                    db.expunge_all()
+                    job = await db.get(ProcessingJob, job_id)
+                    camera = await db.get(Camera, job.camera_id) if job and job.camera_id else None
+                    gc.collect()
+
+                del batch
+                del detection_rows
+                del persisted_plates
 
             if processed_count == 0:
                 raise RuntimeError("No decodable frames were processed.")

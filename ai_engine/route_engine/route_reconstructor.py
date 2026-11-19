@@ -3,10 +3,10 @@ Route Reconstruction Engine
 Reconstructs multi-camera trajectories, computes distance/duration/speeds,
 and detects spatial/temporal route anomalies.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 @dataclass
 class CameraLocation:
@@ -31,6 +31,7 @@ class RouteWaypoint:
     longitude: float
     timestamp: datetime
     speed_kmh: float
+    source_type: str = "camera_topology"
 
 @dataclass
 class ReconstructedRoute:
@@ -44,6 +45,8 @@ class ReconstructedRoute:
     avg_speed_kmh: float
     is_anomalous: bool
     anomaly_reason: Optional[str] = None
+    coordinate_space: str = "WGS84 latitude/longitude"
+    source_types: List[str] = field(default_factory=list)
 
 class RouteReconstructor:
     def __init__(self, topology: Optional[Dict[str, CameraLocation]] = None):
@@ -63,10 +66,17 @@ class RouteReconstructor:
         # Road winding factor: 1.25x direct distance
         return direct_dist * 1.25
 
+    @staticmethod
+    def _normalize_timestamp(ts: datetime) -> datetime:
+        """Normalize datetime to UTC-aware datetime."""
+        if ts.tzinfo is None:
+            return ts.replace(tzinfo=timezone.utc)
+        return ts.astimezone(timezone.utc)
+
     def reconstruct(
         self,
         global_vehicle_id: str,
-        sightings: List[Tuple[str, datetime, float]]  # (camera_id, timestamp, speed_kmh)
+        sightings: Sequence[Union[Tuple[Any, ...], Dict[str, Any]]]
     ) -> ReconstructedRoute:
         if not sightings:
             now = datetime.now(timezone.utc)
@@ -76,39 +86,67 @@ class RouteReconstructor:
                 start_camera_id="C01",
                 end_camera_id="C01",
                 cameras_visited=["C01"],
-                waypoints=[RouteWaypoint("C01", c01.name, c01.latitude, c01.longitude, now, 45.0)],
+                waypoints=[RouteWaypoint("C01", c01.name, c01.latitude, c01.longitude, now, 45.0, source_type="camera_topology")],
                 distance_km=0.0,
                 duration_minutes=0.0,
                 avg_speed_kmh=45.0,
-                is_anomalous=False
+                is_anomalous=False,
+                source_types=["camera_topology"]
             )
 
-        # Sort sightings by timestamp
-        sorted_sightings = sorted(sightings, key=lambda s: s[1])
-        cameras_visited = [s[0] for s in sorted_sightings]
+        # Normalize and sort sightings chronologically
+        def _get_timestamp(s: Union[Tuple[Any, ...], Dict[str, Any]]) -> datetime:
+            raw_ts = s["timestamp"] if isinstance(s, dict) else s[1]
+            return self._normalize_timestamp(raw_ts)
+
+        sorted_sightings = sorted(sightings, key=_get_timestamp)
+        cameras_visited = []
         waypoints: List[RouteWaypoint] = []
         total_distance = 0.0
 
-        for i, (cam_id, ts, spd) in enumerate(sorted_sightings):
+        for i, item in enumerate(sorted_sightings):
+            if isinstance(item, dict):
+                cam_id = str(item.get("camera_id", f"C{i+1:02d}"))
+                ts_utc = self._normalize_timestamp(item["timestamp"])
+                spd = float(item.get("speed_kmh", 40.0))
+                src_type = str(item.get("source_type", "camera_topology"))
+                custom_lat = item.get("latitude")
+                custom_lon = item.get("longitude")
+                cam_name = item.get("camera_name")
+            else:
+                cam_id = str(item[0])
+                ts_utc = self._normalize_timestamp(item[1])
+                spd = float(item[2])
+                src_type = str(item[3]) if len(item) > 3 else "camera_topology"
+                custom_lat = item[4] if len(item) > 4 else None
+                custom_lon = item[5] if len(item) > 5 else None
+                cam_name = None
+
+            cameras_visited.append(cam_id)
             cam_info = self.topology.get(
                 cam_id,
                 CameraLocation(cam_id, f"Node {cam_id}", 12.917 + i * 0.01, 77.622 + i * 0.015)
             )
+            lat = float(custom_lat) if custom_lat is not None else cam_info.latitude
+            lon = float(custom_lon) if custom_lon is not None else cam_info.longitude
+            name = str(cam_name) if cam_name is not None else cam_info.name
+
             waypoints.append(
                 RouteWaypoint(
                     camera_id=cam_id,
-                    camera_name=cam_info.name,
-                    latitude=cam_info.latitude,
-                    longitude=cam_info.longitude,
-                    timestamp=ts,
-                    speed_kmh=spd
+                    camera_name=name,
+                    latitude=lat,
+                    longitude=lon,
+                    timestamp=ts_utc,
+                    speed_kmh=spd,
+                    source_type=src_type
                 )
             )
             if i > 0:
                 prev_cam = waypoints[i - 1]
                 dist = self._haversine_distance(
                     prev_cam.latitude, prev_cam.longitude,
-                    cam_info.latitude, cam_info.longitude
+                    lat, lon
                 )
                 total_distance += dist
 
@@ -137,6 +175,8 @@ class RouteReconstructor:
             is_anomalous = True
             reason = "Looping / U-turn trajectory detected across camera nodes"
 
+        unique_sources = sorted(list({w.source_type for w in waypoints}))
+
         return ReconstructedRoute(
             global_vehicle_id=global_vehicle_id,
             start_camera_id=waypoints[0].camera_id,
@@ -147,5 +187,7 @@ class RouteReconstructor:
             duration_minutes=duration_minutes,
             avg_speed_kmh=avg_speed,
             is_anomalous=is_anomalous,
-            anomaly_reason=reason
+            anomaly_reason=reason,
+            coordinate_space="WGS84 latitude/longitude",
+            source_types=unique_sources
         )

@@ -1,4 +1,13 @@
 """Integration coverage for the Phase 1 media API without requiring model inference."""
+import os
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
+os.environ.setdefault("PADDLE_USE_MKLDNN", "0")
+
 import asyncio
 import sys
 import tempfile
@@ -59,6 +68,8 @@ class MediaProcessingAPITests(unittest.TestCase):
         self.old_video_duration = settings.MAX_VIDEO_DURATION_SECONDS
         self.old_media_demo = settings.MEDIA_DEMO_MODE
         self.old_yolo_path = settings.YOLO_MODEL_PATH
+        self.old_process_every = settings.PROCESS_EVERY_N_FRAMES
+        self.old_yolo_imgsz = getattr(settings, "YOLO_IMAGE_SIZE", 640)
         settings.MEDIA_STORAGE_DIR = str(Path(self.tempdir.name) / "storage")
         settings.MAX_IMAGE_SIZE_MB = 2
         settings.MAX_UPLOAD_SIZE_MB = 2
@@ -86,6 +97,9 @@ class MediaProcessingAPITests(unittest.TestCase):
         settings.MAX_VIDEO_DURATION_SECONDS = self.old_video_duration
         settings.MEDIA_DEMO_MODE = self.old_media_demo
         settings.YOLO_MODEL_PATH = self.old_yolo_path
+        settings.PROCESS_EVERY_N_FRAMES = self.old_process_every
+        settings.YOLO_IMAGE_SIZE = self.old_yolo_imgsz
+        processing_service.clear_media_pipeline_cache()
         self.tempdir.cleanup()
 
     def request(self, method, path, **kwargs):
@@ -303,6 +317,9 @@ class MediaProcessingAPITests(unittest.TestCase):
         self.assertEqual(car_track["latest_center"], {"x": 30, "y": 24})
         self.assertEqual(car_track["plate_read_count"], 1)
         self.assertEqual(car_track["plate_reads"][0]["validated_registration_number"], "KA01AB1234")
+        self.assertIsNotNone(car_track["consensus_plate"])
+        self.assertEqual(car_track["consensus_plate"]["plate_text"], "KA01AB1234")
+        self.assertEqual(car_track["consensus_plate"]["observation_count"], 1)
 
         trails = self.request("GET", f"/api/media/jobs/{job_id}/tracks/trajectories?through_frame_number=4&max_points_per_track=2").json()
         self.assertEqual(trails["coordinate_space"], "source-video pixels; not geographic coordinates")
@@ -315,6 +332,9 @@ class MediaProcessingAPITests(unittest.TestCase):
         track_history = history.json()
         self.assertEqual(track_history["frame_count"], 3)
         self.assertEqual(len(track_history["points"]), 3)
+        self.assertEqual([point["frame_number"] for point in track_history["points"]], [1, 4, 7])
+        self.assertEqual(track_history["consensus_plate"]["plate_text"], "KA01AB1234")
+        self.assertTrue(all(point["consensus_plate_text"] == "KA01AB1234" for point in track_history["points"]))
         self.assertEqual(track_history["points"][1]["plate_reads"][0]["raw_ocr_text"], "KA 01 AB 1234")
 
     def _create_test_camera(self, camera_id="GEO1", **overrides):
@@ -342,6 +362,28 @@ class MediaProcessingAPITests(unittest.TestCase):
             "points": [{"image_x": 0, "image_y": 0, "latitude": 12, "longitude": 77}] * 4,
         })
         self.assertEqual(bad.status_code, 422)
+        collinear = self.request("PUT", "/api/cameras/GEO1/calibration", json={
+            "image_width": 640, "image_height": 480,
+            "points": [
+                {"image_x": 0, "image_y": 100, "latitude": 12, "longitude": 77},
+                {"image_x": 100, "image_y": 100, "latitude": 12, "longitude": 77.001},
+                {"image_x": 200, "image_y": 100, "latitude": 12, "longitude": 77.002},
+                {"image_x": 300, "image_y": 100, "latitude": 12, "longitude": 77.003},
+            ],
+        })
+        self.assertEqual(collinear.status_code, 422)
+        self.assertIn("collinear", collinear.json()["detail"].lower())
+        out_of_bounds = self.request("PUT", "/api/cameras/GEO1/calibration", json={
+            "image_width": 640, "image_height": 480,
+            "points": [
+                {"image_x": -5, "image_y": 0, "latitude": 12, "longitude": 77},
+                {"image_x": 640, "image_y": 0, "latitude": 12, "longitude": 77.001},
+                {"image_x": 639, "image_y": 480, "latitude": 12.001, "longitude": 77.001},
+                {"image_x": 0, "image_y": 479, "latitude": 12.001, "longitude": 77},
+            ],
+        })
+        self.assertEqual(out_of_bounds.status_code, 422)
+        self.assertIn("inside the declared image dimensions", out_of_bounds.json()["detail"])
         points = [
             {"image_x": 0, "image_y": 0, "latitude": 12, "longitude": 77},
             {"image_x": 639, "image_y": 0, "latitude": 12, "longitude": 77.001},
@@ -633,6 +675,7 @@ class MediaProcessingAPITests(unittest.TestCase):
     def test_video_frames_are_sampled_incrementally_with_demo_tracks(self):
         settings.MEDIA_DEMO_MODE = True
         settings.YOLO_MODEL_PATH = "missing-test-model.pt"
+        settings.PROCESS_EVERY_N_FRAMES = 3
         with patch.object(cv2, "VideoCapture", FakeCapture):
             uploaded = self.request("POST", "/api/media/upload", files={"file": ("clip.mp4", b"video", "video/mp4")})
             media_id = uploaded.json()["media_id"]
@@ -643,6 +686,84 @@ class MediaProcessingAPITests(unittest.TestCase):
         self.assertEqual([frame["frame_number"] for frame in results["frames"]], [1, 4, 7])
         self.assertTrue(all(detection["track_id"] != "-1" for detection in results["detections"]))
         self.assertIn(results["processing_metadata"]["tracker"], {"ByteTrack", "DEMO/SYNTHETIC"})
+
+    def test_video_frames_sampled_with_default_step_5(self):
+        settings.MEDIA_DEMO_MODE = True
+        settings.YOLO_MODEL_PATH = "missing-test-model.pt"
+        settings.PROCESS_EVERY_N_FRAMES = 5
+        with patch.object(cv2, "VideoCapture", FakeCapture):
+            uploaded = self.request("POST", "/api/media/upload", files={"file": ("clip_step5.mp4", b"video", "video/mp4")})
+            media_id = uploaded.json()["media_id"]
+            with patch.object(processing_service, "AsyncSessionLocal", self.sessions):
+                created = self.request("POST", f"/api/media/process/{media_id}")
+        results = self.request("GET", f"/api/media/jobs/{created.json()['job_id']}/results").json()
+        self.assertEqual(results["status"], "completed")
+        self.assertEqual([frame["frame_number"] for frame in results["frames"]], [1, 6])
+
+    def test_media_pipeline_cache_reuses_instance_and_isolates_sessions(self):
+        processing_service.clear_media_pipeline_cache()
+        p1 = processing_service.get_cached_media_pipeline(
+            demo_mode=True,
+            yolo_model_path="models/yolov8n.pt",
+            plate_model_path="",
+            sample_every=5,
+            tracker_lost_track_buffer=30,
+            tracker_minimum_consecutive_frames=2,
+            tracker_minimum_iou_threshold=0.1,
+            yolo_image_size=640,
+        )
+        p2 = processing_service.get_cached_media_pipeline(
+            demo_mode=True,
+            yolo_model_path="models/yolov8n.pt",
+            plate_model_path="",
+            sample_every=5,
+            tracker_lost_track_buffer=30,
+            tracker_minimum_consecutive_frames=2,
+            tracker_minimum_iou_threshold=0.1,
+            yolo_image_size=640,
+        )
+        self.assertIs(p1, p2, "Cached pipeline instances with identical parameters must be reused")
+
+        # Different parameter creates a distinct pipeline instance
+        p3 = processing_service.get_cached_media_pipeline(
+            demo_mode=True,
+            yolo_model_path="models/yolov8n.pt",
+            plate_model_path="",
+            sample_every=3,
+            tracker_lost_track_buffer=30,
+            tracker_minimum_consecutive_frames=2,
+            tracker_minimum_iou_threshold=0.1,
+            yolo_image_size=640,
+        )
+        self.assertIsNot(p1, p3)
+
+        # begin_video_session resets state cleanly
+        p1._track_plate_observations["TRK-OLD"] = [("KA01AB1234", 0.95)]
+        p1.begin_video_session(30.0)
+        self.assertEqual(len(p1._track_plate_observations), 0)
+        self.assertIsNotNone(p1.tracker)
+
+    def test_fast_path_ocr_locked_consensus_and_variant_early_exit(self):
+        from ai_engine.pipeline.media_pipeline import MediaPipeline
+        pipeline = MediaPipeline(demo_mode=True, sample_every=5)
+
+        # Before 4 observations, locked consensus is None
+        self.assertIsNone(pipeline._get_locked_track_consensus("TRK-100"))
+
+        # Add 3 high-confidence observations
+        for _ in range(3):
+            pipeline._update_track_plate_history("TRK-100", "KA01AB1234", 0.94)
+        self.assertIsNone(pipeline._get_locked_track_consensus("TRK-100"))
+
+        # Add 4th high-confidence observation
+        pipeline._update_track_plate_history("TRK-100", "KA01AB1234", 0.96)
+        locked = pipeline._get_locked_track_consensus("TRK-100")
+        self.assertIsNotNone(locked)
+        consensus_text, mean_conf, status, temporal = locked
+        self.assertEqual(consensus_text, "KA01AB1234")
+        self.assertGreaterEqual(mean_conf, 0.94)
+        self.assertEqual(status, "valid_indian_format")
+        self.assertTrue(temporal.get("locked_fastpath"))
 
     def test_invalid_media_ids(self):
         self.assertEqual(self.request("POST", "/api/media/process/99999").status_code, 404)

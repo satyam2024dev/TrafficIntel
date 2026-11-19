@@ -46,5 +46,5 @@ export const GeographicRouteMap: React.FC<GeographicRouteMapProps> = ({ tracks, 
     initialize();
     return () => { cancelled = true; map?.remove(); };
   }, [tracks]);
-  return <div className="overflow-hidden rounded-lg border border-slate-800" aria-label="Geographic vehicle route map"><div ref={host} style={{ height, width: '100%' }} /></div>;
+  return <div className="overflow-hidden rounded-lg border border-[#222634]" aria-label="Geographic vehicle route map"><div ref={host} style={{ height, width: '100%' }} /></div>;
 };

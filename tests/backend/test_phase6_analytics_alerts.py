@@ -1,4 +1,13 @@
 """Phase 6 persisted analytics and rule-engine integration tests."""
+import os
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
+os.environ.setdefault("PADDLE_USE_MKLDNN", "0")
+
 import asyncio
 import tempfile
 import unittest
@@ -229,6 +238,94 @@ class Phase6AnalyticsAlertTests(unittest.TestCase):
         export = self.request("GET", "/api/analytics/reports.csv?report_type=alert_history&severity=high&resolved=true&acknowledged=true")
         self.assertEqual(export.status_code, 200, export.text)
         self.assertIn("motorcycle detected", export.text)
+
+    def test_csv_export_neutralizes_formula_injection_characters(self):
+        async def seed_formula_injection():
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            async with self.sessions() as session:
+                media = MediaFile(original_filename="csv-injection.jpg", stored_filename="csv-inj.jpg",
+                                  media_type="image", file_path="/tmp/csv-inj.jpg", file_size=120,
+                                  mime_type="image/jpeg", created_at=now)
+                session.add(media)
+                await session.flush()
+                job = ProcessingJob(media_file_id=media.id, camera_id="CAM1", status="completed",
+                                    progress=100, processing_metadata={"mode": "REAL INFERENCE"}, created_at=now)
+                session.add(job)
+                await session.flush()
+                det = MediaDetection(processing_job_id=job.id, object_type="car", track_id="INJ1",
+                                     confidence=0.95, x1=0, y1=0, x2=10, y2=10)
+                session.add(det)
+                await session.flush()
+                # Plates with leading formula characters, whitespace, and DDE
+                session.add(MediaPlateResult(
+                    processing_job_id=job.id, detection_id=det.id, plate_text="KA01AB1234",
+                    raw_ocr_text="=1+1", normalized_ocr_text="+SUM(1,2)", plate_validation_status="valid_indian_format",
+                    plate_confidence=0.9, ocr_confidence=0.85, x1=0, y1=0, x2=5, y2=5
+                ))
+                session.add(MediaPlateResult(
+                    processing_job_id=job.id, detection_id=det.id, plate_text=None,
+                    raw_ocr_text="  =cmd|' /C calc'!A0", normalized_ocr_text="@DDE_TEST",
+                    plate_validation_status="invalid_format", plate_confidence=0.5, ocr_confidence=0.4,
+                    x1=0, y1=0, x2=5, y2=5
+                ))
+                # Add alert with leading formula character in message
+                session.add(Alert(
+                    alert_type="vehicle_detection", severity="warning", message="=ALERT_FORMULA_INJECTION",
+                    source="real_inference", dedupe_key="csv:inj:1", is_resolved=False, created_at=now
+                ))
+                await session.commit()
+
+        asyncio.run(seed_formula_injection())
+        anpr_csv = self.request("GET", "/api/analytics/reports.csv?report_type=anpr")
+        self.assertEqual(anpr_csv.status_code, 200, anpr_csv.text)
+        # Verify formula characters are safely single-quoted to neutralize formula execution in spreadsheets
+        self.assertIn("'=1+1", anpr_csv.text)
+        self.assertIn("'+SUM(1,2)", anpr_csv.text)
+        self.assertIn("'  =cmd|' /C calc'!A0", anpr_csv.text)
+        self.assertIn("'@DDE_TEST", anpr_csv.text)
+
+        alert_csv = self.request("GET", "/api/analytics/reports.csv?report_type=alert_history")
+        self.assertEqual(alert_csv.status_code, 200, alert_csv.text)
+        self.assertIn("'=ALERT_FORMULA_INJECTION", alert_csv.text)
+
+    def test_alert_lifecycle_transitions_and_error_handling(self):
+        # 1. Non-existent alert IDs return HTTP 404
+        ack_missing = self.request("PATCH", "/api/alerts/99999/acknowledge")
+        self.assertEqual(ack_missing.status_code, 404)
+        self.assertIn("not found", ack_missing.json()["detail"].lower())
+
+        resolve_missing = self.request("PATCH", "/api/alerts/99999/resolve")
+        self.assertEqual(resolve_missing.status_code, 404)
+        self.assertIn("not found", resolve_missing.json()["detail"].lower())
+
+        # 2. Invalid non-integer alert ID returns HTTP 422
+        invalid_id = self.request("PATCH", "/api/alerts/invalid-id/acknowledge")
+        self.assertEqual(invalid_id.status_code, 422)
+
+        # 3. Direct resolution of unacknowledged alert automatically populates acknowledged_at
+        async def seed_unacknowledged_alert():
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            async with self.sessions() as session:
+                alert = Alert(
+                    alert_type="low_confidence_ocr", severity="warning", message="Low confidence plate",
+                    source="real_inference", dedupe_key="lifecycle:direct_resolve", is_resolved=False,
+                    acknowledged_at=None, created_at=now
+                )
+                session.add(alert)
+                await session.commit()
+                return alert.id
+
+        alert_id = asyncio.run(seed_unacknowledged_alert())
+        direct_resolve = self.request("PATCH", f"/api/alerts/{alert_id}/resolve")
+        self.assertEqual(direct_resolve.status_code, 200, direct_resolve.text)
+        res_data = direct_resolve.json()
+        self.assertTrue(res_data["is_resolved"])
+        self.assertIsNotNone(res_data["resolved_at"])
+        self.assertIsNotNone(res_data["acknowledged_at"])  # Automatically marked acknowledged at resolution
+
+        # 4. Invalid severity in query returns HTTP 422
+        bad_severity = self.request("GET", "/api/alerts?severity=unsupported_severity")
+        self.assertEqual(bad_severity.status_code, 422)
 
 
 if __name__ == "__main__":

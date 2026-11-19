@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { Play, Pause, RotateCcw, Radio, Bell, ShieldCheck, Activity, LogOut } from 'lucide-react';
-import { api } from '../services/api';
 import { Link } from 'react-router-dom';
+import { useTrafficData } from '../hooks/useTrafficData';
 
 interface NavbarProps {
   wsConnected: boolean;
@@ -13,8 +13,6 @@ interface NavbarProps {
   username?: string;
   onLogout?: () => Promise<void>;
 }
-
-import { useTrafficData } from '../hooks/useTrafficData';
 
 export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
   const context = useTrafficData();
@@ -62,19 +60,19 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
   };
 
   return (
-    <header className="h-16 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between">
-      {/* Brand & Academic Label */}
+    <header className="h-16 border-b border-[#1F2330] bg-[#0D0F16] sticky top-0 z-40 px-4 lg:px-6 flex items-center justify-between">
+      {/* Brand & Tactical Label */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/10">
-            <Activity className="w-5 h-5 animate-pulse" />
+          <div className="w-9 h-9 rounded-lg bg-blue-950/80 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-sm">
+            <Activity className="w-5 h-5 text-blue-500" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm lg:text-base tracking-tight text-white">
-                TRAFFIC<span className="text-cyan-400">INTEL</span>
+                TRAFFIC<span className="text-blue-500">INTEL</span>
               </span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/40 font-bold hidden sm:inline-block">
+              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#171A24] text-blue-400 border border-[#2B3040] font-bold hidden sm:inline-block">
                 ANPR v1.0
               </span>
             </div>
@@ -94,45 +92,47 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
       {/* Center/Right: Demo Controls & Status */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Simulation Control Group */}
-        {props.role === 'admin' && <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 gap-1 shadow-inner">
-          <button
-            onClick={handleStart}
-            disabled={loading !== null || (isSimRunning && !isSimPaused)}
-            title="Start Continuous Simulation"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-              isSimRunning && !isSimPaused
-                ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 animate-pulse'
-                : 'text-slate-300 hover:text-emerald-400 hover:bg-slate-800'
-            }`}
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span className="hidden sm:inline">START DEMO</span>
-          </button>
+        {props.role === 'admin' && (
+          <div className="flex items-center bg-[#11131A] border border-[#222634] rounded-lg p-1 gap-1 shadow-sm">
+            <button
+              onClick={handleStart}
+              disabled={loading !== null || (isSimRunning && !isSimPaused)}
+              title="Start Continuous Simulation"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                isSimRunning && !isSimPaused
+                  ? 'bg-emerald-600 text-white shadow-sm font-bold'
+                  : 'text-slate-300 hover:text-emerald-400 hover:bg-[#171A24]'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span className="hidden sm:inline">START DEMO</span>
+            </button>
 
-          <button
-            onClick={handlePause}
-            disabled={loading !== null || !isSimRunning || isSimPaused}
-            title="Pause Simulation"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-              isSimPaused
-                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30'
-                : 'text-slate-300 hover:text-amber-400 hover:bg-slate-800'
-            }`}
-          >
-            <Pause className="w-3.5 h-3.5 fill-current" />
-            <span className="hidden sm:inline">PAUSE</span>
-          </button>
+            <button
+              onClick={handlePause}
+              disabled={loading !== null || !isSimRunning || isSimPaused}
+              title="Pause Simulation"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                isSimPaused
+                  ? 'bg-amber-600 text-white shadow-sm font-bold'
+                  : 'text-slate-300 hover:text-amber-400 hover:bg-[#171A24]'
+              }`}
+            >
+              <Pause className="w-3.5 h-3.5 fill-current" />
+              <span className="hidden sm:inline">PAUSE</span>
+            </button>
 
-          <button
-            onClick={handleReset}
-            disabled={loading !== null}
-            title="Reset Simulation State"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-all"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">RESET</span>
-          </button>
-        </div>}
+            <button
+              onClick={handleReset}
+              disabled={loading !== null}
+              title="Reset Simulation State"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-[#171A24] transition-all"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">RESET</span>
+            </button>
+          </div>
+        )}
 
         {/* Live WebSocket Status Dot */}
         <div
@@ -155,18 +155,27 @@ export const Navbar: React.FC<Partial<NavbarProps>> = (props) => {
         {/* Alerts Bell Link */}
         <Link
           to="/alerts"
-          className="relative p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition"
+          className="relative p-2 rounded-lg bg-[#11131A] border border-[#222634] text-slate-300 hover:text-white hover:border-[#2B3040] transition shadow-sm"
           title="Active Alerts"
         >
           <Bell className="w-4 h-4" />
           {activeAlertsCount > 0 && (
-            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-[10px] font-mono font-bold text-white shadow-lg animate-bounce">
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-[10px] font-mono font-bold text-white shadow-sm">
               {activeAlertsCount}
             </span>
           )}
         </Link>
-        <span className="hidden md:inline text-[10px] text-slate-500">{props.username} Â· {props.role}</span>
-        <button onClick={() => void props.onLogout?.()} className="rounded border border-slate-800 p-2 text-slate-300 hover:text-white" title="Sign out" aria-label="Sign out"><LogOut size={15}/></button>
+        <span className="hidden md:inline-flex items-center text-xs font-mono px-2.5 py-1 rounded bg-[#171A24] border border-[#2B3040] text-slate-300">
+          {props.username} • {props.role}
+        </span>
+        <button
+          onClick={() => void props.onLogout?.()}
+          className="rounded-lg border border-[#222634] bg-[#11131A] p-2 text-slate-400 hover:text-white hover:border-[#2B3040] transition"
+          title="Sign out"
+          aria-label="Sign out"
+        >
+          <LogOut size={15} />
+        </button>
       </div>
     </header>
   );

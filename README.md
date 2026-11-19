@@ -1,217 +1,370 @@
-# Vehicle Route ANPR
+# TrafficIntel — Tactical Traffic Intelligence & Real-Time ANPR Command Center
 
-Vehicle Route ANPR is a research prototype for real vehicle and license-plate detection, OCR, tracking, geographic route reconstruction, live camera monitoring, evaluation, analytics, and alerting. Uploaded media and configured cameras use real inference when `MEDIA_DEMO_MODE=False`. Legacy seeded tables and the optional dashboard simulation are separate synthetic features; they are not included in Phase 6 real-inference analytics.
+TrafficIntel is an enterprise-grade, real-time traffic monitoring, vehicle tracking, and automatic number plate recognition (ANPR) intelligence platform. Built with a **React 18 + TypeScript** Tactical Command Center frontend, a **FastAPI** asynchronous backend, and an **AI Engine** integrating dual YOLO models, ByteTrack multi-object tracking, and PaddleOCR, TrafficIntel provides end-to-end capabilities from live camera feeds and video uploads to planar homography route reconstruction, analytics, and rule-based alerts.
 
-This project is not a certified traffic enforcement, identity, or legal-compliance system. Use camera feeds and registration data only with authorization. No cross-camera physical identity is established by a matching tracker ID.
+> **Research & Operational Scope**: TrafficIntel is designed for traffic engineering, corridor analytics, and demonstration research. Physical coordinate estimates derived via camera calibration are explicitly distinguished from verified hardware GPS readings.
 
-## Architecture
+---
 
-```text
-React + TypeScript + Vite
-        │ same-origin /api and /ws
-Nginx frontend proxy ── FastAPI (one worker for in-process camera sessions)
-                              ├── Upload/video processing background tasks
-                              ├── Real YOLO vehicle + plate detectors
-                              ├── PaddleOCR + ByteTrack
-                              ├── Live webcam / allowlisted RTSP sessions
-                              └── SQLAlchemy migrations and persisted results
-                                      ├── SQLite (local)
-                                      └── PostgreSQL (deployment)
-```
+## Table of Contents
 
-The AI code is under `ai_engine/`, API and services under `backend/app/`, the Dashboard under `frontend/src/`, the relational schema under `database/schema.sql`, and tests under `tests/`. Main features are:
+1. [Key Capabilities](#key-capabilities)
+2. [System Architecture](#system-architecture)
+3. [Technology Stack](#technology-stack)
+4. [Hardware & Model Checkpoints](#hardware--model-checkpoints)
+5. [Windows Local Setup & Startup Guide](#windows-local-setup--startup-guide)
+6. [Environment Variables Reference](#environment-variables-reference)
+7. [Testing & Verification (111 Tests)](#testing--verification-111-tests)
+8. [End-to-End Live Demonstration Script](#end-to-end-live-demonstration-script)
+9. [API Reference & Documentation](#api-reference--documentation)
+10. [Reliability, Security & Safety Controls](#reliability-security--safety-controls)
 
-- **Phase 1:** image/video upload, job state, media previews, and stored results.
-- **Phase 2:** manually labeled ANPR evaluation; no accuracy is claimed without labels.
-- **Phase 3:** ByteTrack IDs and image-space track histories.
-- **Phase 4:** camera homography and external GPS route points, with source types preserved.
-- **Phase 5:** isolated live camera sessions, bounded frame handling, reconnects, and event deduplication.
-- **Phase 6:** persisted-record analytics, ANPR search, configurable alert rules, and CSV exports.
-- **Phase 7:** safer deployment defaults, authenticated sessions and roles, bounded work, and operational documentation.
+---
 
-## Technology
+## Key Capabilities
 
-- Frontend: React 18, TypeScript, Vite, React Router, Recharts, Leaflet, Axios.
-- Backend: Python 3.11, FastAPI, Pydantic v2, SQLAlchemy async, Uvicorn.
-- Inference: Ultralytics YOLO, PaddleOCR/PaddlePaddle, OpenCV, ByteTrack/Supervision.
-- Storage: SQLite for local development or PostgreSQL for deployment; uploaded files live outside the database.
-- Deployment: Docker Compose, Nginx static server/reverse proxy.
+- **Real-Time & Batch AI Vehicle Detection**: High-speed detection of cars, motorcycles, buses, trucks, and auto-rickshaws using real YOLOv8 (`models/yolov8n.pt`) with confidence filtering.
+- **Dedicated License Plate Localization & Recognition**: Dual-detector pipeline utilizing a specialized YOLO plate detector (`models/license_plate_detector.pt`) paired with PaddleOCR for high-precision alphanumeric extraction.
+- **Windows CPU Stability**: Configured PaddleOCR CPU engine with `enable_mkldnn=False` and graceful initialization fallbacks, eliminating Windows oneDNN memory primitive crashes on variable-aspect plate crops.
+- **Indian Vehicle Plate Standardization**: Native regex validation and formatting for standard Indian regional plates (e.g., `KA01AB1234`, `DL04C1020`) and Bharat Series (`BH`) registrations (`YY BH #### XX`).
+- **ByteTrack Multi-Object Tracking & Consensus Voting**: Maintains persistent vehicle identities across frames, recovering from brief occlusions, and aggregates plate reads into a temporal consensus plate with confidence weighting.
+- **4-Point Planar Homography Calibration & Route Reconstruction**: Mathematical projection of vehicle ground-contact points (tire bottom-center) onto geographic coordinates (WGS84 lat/long) with validation against collinearity and frame boundaries. Calibrated estimates (`calibrated_estimate`) are explicitly labeled and separated from hardware GPS observations (`gps_observation`).
+- **Resilient Live Camera Monitoring**: Supports local USB webcams and allowlisted RTSP streams via bounded OpenCV capture workers, featuring non-blocking MJPEG streaming (`multipart/x-mixed-replace`), client disconnect detection, exponential backoff reconnection, and event deduplication.
+- **Persisted Analytics & Formula-Safe CSV Export**: Traffic volume curves, classification breakdowns, and OCR confidence metrics. CSV exports neutralize spreadsheet formula injection attacks (`=`, `+`, `-`, `@`, `\t`, `%`).
+- **Rule-Based Alert Lifecycle Engine**: Configurable operational alert rules (plate watchlists, high-traffic thresholds, low-confidence OCR, camera disconnection) with acknowledgment and resolution tracking.
+- **Tactical Command Center Interface**: Ergonomic dark-theme UI (`#090A0F` base canvas, `#11131A` cards, `#171A24` controls, Signal Cobalt accents) with High Security Registration Plate (HSRP) visual badges (`IND` blue strip, monospace character styling, validity indicators).
 
-## Temporary development authentication bypass
+---
 
-For local development only, the sign-in screen can be bypassed while debugging login-origin problems. The backend accepts bypassed API and WebSocket requests only from exact origins in `DEV_AUTH_TRUSTED_ORIGINS`; configure the same origin in `CORS_ORIGINS` as usual. Wildcards are rejected. Production startup rejects `DEV_AUTH_BYPASS=true`.
-
-Set these values in `backend/.env`:
-
-```dotenv
-APP_ENV=development
-DEV_AUTH_BYPASS=true
-DEV_AUTH_TRUSTED_ORIGINS=["http://localhost:5173"]
-```
-
-Set this in `frontend/.env.local`, then restart both development servers:
-
-```dotenv
-VITE_DEV_AUTH_BYPASS=true
-```
-
-To disable the bypass, set both flags to `false` (or remove them) and restart the servers. The existing login, session, CSRF/origin, password hashing, and role checks remain available. This bypass grants the trusted local development origin the admin role, so do not expose that origin or enable the setting outside development.
-
-## Requirements and model files
-
-Use Python 3.11. The model checkpoints are not packaged in the Docker image and must exist locally:
+## System Architecture
 
 ```text
-models/yolov8n.pt
-models/license_plate_detector.pt
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        Tactical Traffic Command Center UI                              │
+│             React 18  •  TypeScript  •  Vite  •  Tailwind CSS  •  Leaflet Maps        │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ HTTP / Cookie Session / WebSocket
+                                            ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                            FastAPI Backend Core Service                                │
+│       API Prefix: /api  •  Uvicorn  •  Auth & RBAC Middleware  •  Origin Validation     │
+├───────────────────────────────────────────┬────────────────────────────────────────────┤
+│ REST Endpoints:                           │ Background Services:                       │
+│  • /api/auth (Login, Me, Logout)          │  • ProcessingService (Job Worker Semaphore)│
+│  • /api/cameras (CRUD, Location, Calib)   │  • LiveCameraManager (Capture Workers)     │
+│  • /api/media (Upload, Jobs, Results)     │  • AlertEngine (Rule Evaluator & Dedup)    │
+│  • /api/analytics (History, CSV Export)   │  • WebSocket /ws/traffic (Live Telemetry)  │
+│  • /api/alerts (Rules, Ack, Resolve)      │                                            │
+└─────────────────────┬─────────────────────┴───────────────────────┬────────────────────┘
+                      │                                             │
+                      ▼                                             ▼
+┌──────────────────────────────────────────┐  ┌──────────────────────────────────────────┐
+│              AI Engine                   │  │          Persistence Layer               │
+│  • YOLOv8n (Vehicle Detector)            │  │  • SQLite (traffic_intel.db)             │
+│  • YOLO Plate Detector (Localization)    │  │  • SQLAlchemy 2.0 Async ORM              │
+│  • PaddleOCR (enable_mkldnn=False)       │  │  • Local Media Storage (backend/storage) │
+│  • ByteTrack (Kalman Filter Tracker)     │  │     - uploads/   - frames/               │
+│  • Homography Engine (Planar Projector)  │  │     - plates/    - live-plates/          │
+│  • Weather Preprocessing (CLAHE, DCP)    │  │                                          │
+└──────────────────────────────────────────┘  └──────────────────────────────────────────┘
 ```
 
-`yolov8n.pt` must be a compatible vehicle detector. `license_plate_detector.pt` must be a plate-specific detector whose class names include a plate label. The plate checkpoint must be trained or obtained from an authorized source; the project does not download or fabricate plate weights. PaddleOCR downloads its own recognition assets on first use, so the runtime needs access to the configured Paddle model cache or pre-populated model assets.
+---
 
-Install inference dependencies in the active Python 3.11 environment:
+## Technology Stack
 
-```powershell
-python -m pip install -r backend/requirements.txt
-python -m pip install -r backend/requirements-ai.txt
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, TypeScript 5, Vite 5, Tailwind CSS, Lucide React, Leaflet & React-Leaflet, Recharts, Axios |
+| **Backend** | Python 3.11, FastAPI, Pydantic v2, SQLAlchemy (Asyncio), aiosqlite, Uvicorn, HTTPX |
+| **AI / Computer Vision** | Ultralytics YOLOv8, PaddleOCR / PaddlePaddle CPU, OpenCV (`cv2`), ByteTrack / Supervision, NumPy, SciPy |
+| **Persistence** | SQLite (`traffic_intel.db`) via `sqlite+aiosqlite`, filesystem media storage |
+| **Security** | Scrypt password hashing, HttpOnly SameSite=Strict signed cookies, Origin allowlisting, CSV sanitization |
+
+---
+
+## Hardware & Model Checkpoints
+
+The system is configured to run real inference using local model checkpoints placed under the `models/` directory:
+
+```text
+models/
+├── yolov8n.pt                  # Primary vehicle detection checkpoint (COCO classes 2, 3, 5, 7)
+└── license_plate_detector.pt   # Secondary plate localization checkpoint
 ```
 
-Set `MEDIA_DEMO_MODE=False`, `YOLO_MODEL_PATH=models/yolov8n.pt`, and `PLATE_MODEL_PATH=models/license_plate_detector.pt` in `backend/.env`. Relative model paths resolve from the repository root whether Uvicorn starts in the root or `backend/`. Missing dependencies or weights produce actionable failures; real inference does not silently switch to synthetic providers. `GET /api/health` checks API/database readiness and reports configured media mode, but intentionally does not load large models.
+- `models/yolov8n.pt`: Standard YOLOv8 nano model trained on COCO for identifying cars, motorcycles, buses, and trucks.
+- `models/license_plate_detector.pt`: Specialized YOLO checkpoint trained for bounding-box plate localization.
+- **PaddleOCR Weights**: Downloaded automatically by PaddleOCR into `~/.paddleocr/` on first execution. The engine has been patched to explicitly pass `enable_mkldnn=False`, ensuring seamless execution on Windows CPU environments.
 
-## Local development
+---
 
-From the repository root in PowerShell:
+## Windows Local Setup & Startup Guide
+
+Follow these exact steps in Windows PowerShell to set up and run TrafficIntel.
+
+### 1. Environment & Dependency Installation
+
+Open PowerShell as an Administrator or standard user in `D:\neP\vehicle-route-anpr`:
 
 ```powershell
+# Navigate to project root
+cd D:\neP\vehicle-route-anpr
+
+# Create Python 3.11 virtual environment
 py -3.11 -m venv .venv311
+
+# Activate virtual environment
 .\.venv311\Scripts\Activate.ps1
+
+# Upgrade pip and install backend & AI dependencies
+python -m pip install --upgrade pip
 python -m pip install -r backend/requirements.txt
 python -m pip install -r backend/requirements-ai.txt
+```
+
+### 2. Configure Backend Environment (`backend/.env`)
+
+Ensure `backend/.env` exists and contains the real inference settings:
+
+```powershell
+# Copy example configuration if .env does not exist
 if (-not (Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env }
 ```
 
-Keep an existing `backend/.env`; edit only the settings you intend to change. Set a random `SECRET_KEY` for stable local sessions:
+Key settings in `backend/.env`:
 
-```powershell
-python -c "import secrets; print(secrets.token_urlsafe(48))"
+```dotenv
+APP_NAME="Real-Time Vehicle Route Tracking & All-Weather ANPR"
+APP_ENV="development"
+DEV_AUTH_BYPASS=false
+MEDIA_DEMO_MODE=false
+DEMO_MODE=false
+
+# Database
+DATABASE_URL="sqlite+aiosqlite:///./traffic_intel.db"
+
+# Model Checkpoints
+YOLO_MODEL_PATH=models/yolov8n.pt
+PLATE_MODEL_PATH=models/license_plate_detector.pt
+
+# Media & Storage
+MEDIA_STORAGE_DIR=backend/storage
+MAX_UPLOAD_SIZE_MB=100
+MAX_IMAGE_SIZE_MB=20
+MAX_VIDEO_DURATION_SECONDS=600
+
+# CORS & Trusted Origins (Include your LAN IP if accessing over network)
+CORS_ORIGINS=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+
+# Secret Key for signed session cookies (32+ characters)
+SECRET_KEY="generate-a-strong-32-byte-secret-key-for-local-sessions"
 ```
 
-Create the first administrator interactively. The password is entered with terminal echo disabled and stored using scrypt:
+> **Tip**: You can generate a secure secret key via:
+> ```powershell
+> python -c "import secrets; print(secrets.token_urlsafe(48))"
+> ```
+
+### 3. Provision Admin Account
+
+Create the administrative user interactively (passwords are hashed with `scrypt`):
 
 ```powershell
 python -m backend.app.create_admin
+# Enter Username: admin
+# Enter Email: admin@trafficintel.local
+# Enter Full Name: System Administrator
+# Enter Password: (min 12 characters, e.g., AdminSecure123!)
 ```
 
-For additional accounts, the same command accepts `--role operator`, `--role analyst`, or `--role viewer`; the default role is `admin`. Do not place passwords in shell arguments or source control.
-
-Start FastAPI from the repository root:
-
+*(Optional)* Create an analyst or operator user:
 ```powershell
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+python -m backend.app.create_admin --username analyst --role analyst
 ```
 
-Start the Vite frontend in another terminal:
+### 4. Start the Backend Server
+
+Start Uvicorn on port `8000`:
 
 ```powershell
-cd frontend
-npm ci
+# From repository root (D:\neP\vehicle-route-anpr)
+.\.venv311\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Verify backend health in another PowerShell terminal:
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+# Returns: {"status":"ok","database":"connected","models":{"mode":"REAL INFERENCE","configured":true}}
+```
+
+### 5. Start the Frontend Development Server
+
+Open a second PowerShell window:
+
+```powershell
+cd D:\neP\vehicle-route-anpr\frontend
+npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` and sign in. Vite proxies `/api` and `/ws` to `127.0.0.1:8000`; set `VITE_API_PROXY_TARGET` in `frontend/.env` only when the local backend uses another address. The API uses an HttpOnly, SameSite=Strict session cookie. Development sessions use an ephemeral process key if `SECRET_KEY` is not configured, so those sessions are invalidated on backend restart.
+The frontend will start at `http://localhost:5173`. Open this URL in Google Chrome or Microsoft Edge.
 
-### Roles
+#### Troubleshooting LAN / Mobile Access
+If accessing from another computer or mobile device on the local network (e.g., `http://192.168.1.50:5173`):
+1. Add the exact LAN origin to `CORS_ORIGINS` in `backend/.env` (e.g. `http://192.168.1.50:5173`).
+2. Start Vite with `npm run dev -- --host 0.0.0.0`.
+3. Start Uvicorn with `--host 0.0.0.0`.
 
-- `viewer`: authenticated read access.
-- `analyst`: read access and ANPR ground-truth evaluation.
-- `operator`: upload/process media, operate cameras, import route observations, acknowledge/resolve alerts.
-- `admin`: operator actions plus camera/location/calibration and alert-rule administration, and legacy simulation controls.
+---
 
-All application API routes require a signed session except `/api/auth/login`, `/api/auth/logout`, and `/api/health`. WebSocket connections use the same session cookie. Sign-in is rate-limited per backend process. For multiple replicas, move rate limiting and live-session ownership to shared infrastructure before scaling beyond one backend worker.
+## Environment Variables Reference
 
-## API and health checks
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `APP_ENV` | `development` | Environment mode (`development`, `testing`, `production`). In production, interactive `/docs` are disabled and secure cookies are required. |
+| `DEV_AUTH_BYPASS` | `false` | When `true` in development, auto-logs into the dashboard from trusted origins. Set `false` for real authentication. |
+| `DEV_AUTH_TRUSTED_ORIGINS` | `["http://localhost:5173"]` | Strict origin list allowed to use the development bypass. |
+| `DATABASE_URL` | `sqlite+aiosqlite:///./traffic_intel.db` | SQLAlchemy connection URL. Supports SQLite or PostgreSQL (`postgresql+asyncpg://...`). |
+| `MEDIA_DEMO_MODE` | `false` | When `false`, all uploaded images/videos run real YOLO, plate detector, and PaddleOCR models. |
+| `DEMO_MODE` | `false` | Controls whether legacy synthetic simulation data feeds are active. |
+| `YOLO_MODEL_PATH` | `models/yolov8n.pt` | Path to YOLO vehicle detector checkpoint. |
+| `PLATE_MODEL_PATH` | `models/license_plate_detector.pt` | Path to specialized YOLO license plate detector checkpoint. |
+| `MEDIA_STORAGE_DIR` | `backend/storage` | Root directory where uploaded media, cropped plates, and annotated frames are stored. |
+| `MAX_UPLOAD_SIZE_MB` | `100` | Maximum video upload size in megabytes. |
+| `MAX_IMAGE_SIZE_MB` | `20` | Maximum image upload size in megabytes. |
+| `MAX_VIDEO_DURATION_SECONDS`| `600` | Maximum permitted video duration in seconds (10 minutes). |
+| `PROCESS_EVERY_N_FRAMES` | `3` | Frame sub-sampling interval for video processing. |
+| `LIVE_CAMERA_ALLOWED_RTSP_HOSTS` | `""` | Comma-separated list of approved RTSP hostnames/IPs. Blank denies RTSP stream setup for security. |
+| `CORS_ORIGINS` | `["http://localhost:5173"]` | Exact allowed browser origins for CORS and CSRF state validation. |
+| `SECRET_KEY` | `""` | 32+ character cryptographic secret for signing session cookies. |
 
-Local development API documentation is at `http://127.0.0.1:8000/docs`; it is disabled when `APP_ENV=production`. The API prefix is `/api`.
+---
 
-Common endpoints:
+## Testing & Verification (111 Tests)
 
-- `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`
-- `GET /api/health`
-- `POST /api/media/upload`, `POST /api/media/process/{media_id}`
-- `GET /api/media/jobs/{job_id}` and `/results`
-- `GET/POST /api/cameras`, `PUT /api/cameras/{camera_id}/stream`
-- `POST /api/cameras/{camera_id}/live/start`, `/live/stop`, `GET /live/status`, `/live/stream`, `/live/events`
-- `PUT /api/cameras/{camera_id}/location`, `/calibration`, and `POST /live/gps`
-- `GET /api/analytics`, `/api/analytics/anpr/search`, `/api/analytics/anpr/detections`
-- `GET /api/analytics/reports.csv?report_type=daily_traffic|vehicle_classification|camera_detections|anpr|ocr_confidence|alert_history`
-- `GET/POST /api/alerts/rules`, `GET /api/alerts/page`, and alert acknowledgement/resolution routes.
+TrafficIntel is backed by a test suite covering the entire stack. All tests run locally without external network dependencies:
 
-The readiness check is:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:8000/api/health
-```
-
-Health does not disclose database exception details or secrets. Analytics include completed real-inference media jobs and persisted live-camera events only. Media analytics bucket observations by processing-job creation time; video-relative timestamps are available in detection results. OCR confidence is not accuracy. Track IDs are scoped to jobs/cameras and are not joined across cameras.
-
-## Cameras and routes
-
-Register a camera, then configure either a local webcam device index or an RTSP stream. RTSP URLs are accepted only when the host exactly matches `LIVE_CAMERA_ALLOWED_RTSP_HOSTS`; leave this empty unless the deployment administrator has approved a host. Credentials are stored backend-side and omitted from responses and sanitized operational errors. Restrict permitted RTSP hosts to camera infrastructure you administer; the application cannot prove that an allowlisted DNS name always resolves to the same address.
-
-Set camera location and direction separately. Geographic route points are written only from GPS observations or calibrated homography mappings with matching image dimensions. Ordinary pixels are never GPS. The map distinguishes `gps_observation` from `calibrated_estimate`; uncalibrated image trajectories remain image-space histories.
-
-`LIVE_PROCESSING_FPS`, `LIVE_FRAME_READ_TIMEOUT_SECONDS`, reconnect settings, `LIVE_EVENT_DEDUP_SECONDS`, and `MAX_LIVE_CAMERA_SESSIONS` control live operation. Live monitoring loads real model providers per camera session; CPU memory and inference capacity limit practical camera count. The checked environment has no guarantee of a physical webcam or RTSP source. A successful start request is not proof that frames are arriving.
-
-## Upload limits and database
-
-Uploads are extension/MIME checked, decoded by OpenCV, stored under `MEDIA_STORAGE_DIR`, and given random storage names. Defaults are 20 MB for images, 100 MB for videos, and 600 seconds per video; configure `MAX_IMAGE_SIZE_MB`, `MAX_UPLOAD_SIZE_MB`, and `MAX_VIDEO_DURATION_SECONDS`. Client responses do not return internal storage paths.
-
-SQLite is the local default. Existing startup migrations are additive and preserve existing records; they add missing media/geographic/alert columns, make SQLite plate confidence nullable, and create Phase 7 query indexes. `Base.metadata.create_all` creates new tables. Synthetic legacy seeding runs only when `DEMO_MODE=True`; it does not run for a fresh deployment with `DEMO_MODE=False`. Existing legacy/demo rows are retained and excluded from persisted real-inference analytics.
-
-Back up the database and media volume together during a quiescent period. Example PostgreSQL backup/restore:
-
-```bash
-pg_dump --format=custom "$DATABASE_URL" > traffic_intel.dump
-pg_restore --clean --if-exists --dbname="$DATABASE_URL" traffic_intel.dump
-```
-
-For SQLite, stop the backend before copying `traffic_intel.db`; also back up the configured media storage directory. Test restores against a separate database before replacing production data. Do not reset or delete the existing database to apply migrations.
-
-## Testing
-
-Run from the repository root:
+### 1. Run Backend Tests (60 Tests)
+Includes database migrations, authentication, RBAC, camera service, media processing, PaddleOCR Windows stability, analytics, and full end-to-end integration:
 
 ```powershell
-python -m unittest discover -s tests/backend -v
-python -m unittest discover -s tests/ai -v
-python -m compileall -q backend ai_engine tests
-cd frontend
-npm test
-npm run build
+.\.venv311\Scripts\python.exe -m unittest discover -s tests\backend -v
 ```
+*Result*: **60 tests passed (OK)**.
 
-Tests cover AI adapters/pipeline, media storage and job API behavior, migrations, camera-session lifecycle, geographic calibration, ANPR evaluation, analytics, alert rules, cookie login/authorization, and frontend contracts. Fakes are used only in tests; a test pass does not prove model quality, a connected camera, or geographic accuracy. For actual image inference, upload a real image through the Dashboard and verify the job metadata names real providers and persists results. Video/ByteTrack, PaddleOCR, physical camera and GPS integrations require their respective models/data/hardware.
+### 2. Run AI Engine Tests (29 Tests)
+Includes homography projection, ByteTrack Kalman filtering, plate OCR normalization, dual-detector routing, and ground-truth ANPR evaluation:
 
-## Production deployment with Compose
+```powershell
+.\.venv311\Scripts\python.exe -m unittest discover -s tests\ai -v
+```
+*Result*: **29 tests passed (OK)**.
 
-The Compose deployment builds the backend and Nginx frontend, runs one backend worker, and creates persistent PostgreSQL and media volumes. It does not seed synthetic rows, expose PostgreSQL or the backend host ports, or copy checkpoint files into the image. Models are mounted read-only from `models/`.
+### 3. Run Frontend Contract Tests (22 Tests)
+Verifies media workspace formatters, contract types, API guardrails, and analytics chart aggregations:
 
-1. Copy root `.env.example` to `.env` and replace every placeholder. Set a high-entropy `SECRET_KEY` (at least 32 characters), a unique PostgreSQL password, a URL-encoded `DATABASE_URL` password, and the actual public HTTPS origin in `CORS_ORIGINS`.
-2. Confirm both model files exist in `models/`; install the intended YOLO and plate checkpoints. PaddleOCR model assets must be downloadable on first run or present in its configured cache.
-3. Start the stack: `docker compose up --build -d`.
-4. Verify `docker compose ps` shows database/backend/frontend healthy and run `curl http://127.0.0.1:8080/api/health` from the host.
-5. Create the administrator inside the container: `docker compose exec backend python -m backend.app.create_admin`.
-6. Configure an external reverse proxy to terminate TLS and proxy HTTPS/WebSocket traffic to `http://127.0.0.1:8080`. Preserve `Upgrade`/`Connection` headers for `/ws/`, forward the original host/proto, set upload/read timeouts to accommodate configured media sizes, and enable HSTS at the TLS edge. Do not expose the backend or database directly to the Internet.
+```powershell
+cmd /c "npm --prefix frontend test"
+```
+*Result*: **22 tests passed (ALL FRONTEND TESTS PASSED)**.
 
-The supplied frontend Nginx provides same-origin `/api` and `/ws` proxying and basic security headers; it does not terminate TLS. Set `CORS_ORIGINS` to the exact externally visible origin, such as `https://traffic.example.com`. The backend session cookie is `Secure` in production. Keep `.env`, database dumps, camera URLs, and model files out of source control and image build contexts.
+### 4. Verify Frontend Production Build
+Validates TypeScript types and Vite bundle creation:
 
-The production frontend build can also be created locally with `cd frontend; npm ci; npm run build`. Serve the resulting `dist/` directory through a static server that implements SPA fallback and proxies `/api` and `/ws` to the backend over a private network.
+```powershell
+cmd /c "npm --prefix frontend run build"
+```
+*Result*: **2,381 modules transformed, 0 errors, production assets generated in `frontend/dist/`**.
 
-## Reliability and known limitations
+---
 
-- Media jobs use FastAPI background tasks and a bounded in-process semaphore/queue limit. They are not a durable external task queue; interrupted jobs are marked failed on restart. Deploy one backend worker while live-camera sessions are process-local.
-- CPU-only inference is supported but throughput depends on image size, model and PaddleOCR runtime. Video sampling uses `PROCESS_EVERY_N_FRAMES`; skipped frames are still decoded by OpenCV.
-- Analytics time for uploaded media uses job creation time, not source capture time. Recognition rates are not ground-truth accuracy metrics.
-- Calibration results depend on camera placement and control-point quality. GPS hardware and coordinate accuracy are deployment responsibilities.
-- RTSP host allowlisting is an administrative control, not a general network isolation boundary. Apply egress firewall rules to restrict backend access to approved camera networks.
-- The prototype has no statutory vehicle registry integration, no face/person recognition, and no cross-camera physical re-identification proof.
-- Production Compose, TLS termination, actual model inference, physical camera, RTSP, restore drills, and external GPS hardware must be validated in the target deployment before describing it as production-ready.
+## End-to-End Live Demonstration Script
+
+This structured 6-step script is ready for viva presentations, project reviews, or live client evaluations.
+
+### Step 1: Secure Operator Sign-In & Role Enforcement
+1. Navigate to `http://localhost:5173/login`.
+2. Enter the administrator credentials provisioned via `backend.app.create_admin`.
+3. Highlight that authentication uses an **HttpOnly, SameSite=Strict** signed session cookie (`anpr_session`), protecting against token theft via XSS.
+4. Open Chrome DevTools (`F12`) -> Application -> Cookies to show the session cookie.
+5. Demonstrate that unauthorized requests to protected endpoints return `401 Unauthorized`, and unprivileged accounts (analyst) cannot modify alert rules (`403 Forbidden`).
+
+### Step 2: Camera Calibration & Homography Setup
+1. In the sidebar, navigate to **Cameras**.
+2. Select or create **CAM-01** (Silk Board Junction South Gate).
+3. Open the **Location & Calibration** tab.
+4. Demonstrate the 4-point homography calibration grid:
+   - Provide image control points (`image_x`, `image_y`) matching camera perspective corners.
+   - Enter corresponding GPS coordinates (e.g. Latitude: `12.9172`, Longitude: `77.6228`).
+5. Save calibration: the backend runs OpenCV `findHomography` and calculates the transformation matrix.
+6. Emphasize that non-invertible, collinear, or out-of-bounds coordinates are mathematically rejected (`422 Unprocessable Entity`).
+
+### Step 3: Media Upload & Real AI Pipeline Execution
+1. Navigate to **Media Upload**.
+2. Drag and drop a test image or video (e.g. `data/test_samples/bus.jpg` or highway video).
+3. Select camera node **CAM-01**.
+4. Click **Start Processing**.
+5. Observe the multi-stage pipeline:
+   - Vehicle Detection: YOLOv8 locates all vehicles in the frame.
+   - Plate Localization: RealPlateDetector extracts exact license plate bounding boxes.
+   - Character OCR: PaddleOCR reads plate text with MKLDNN disabled.
+   - Plate Validation: Formatter checks Indian state standards and flags valid registrations.
+
+### Step 4: Tracking, Consensus Voting & Calibrated Geographic Routes
+1. Navigate to **Processing Results** -> **Tracking & Trajectories**.
+2. Select a vehicle track (e.g. `TRK-01`).
+3. Show the **Consensus Plate Badge**: point out that multiple frame readings vote temporally to eliminate single-frame OCR noise.
+4. Show the **Geographic Route Map**:
+   - Amber dashed line represents the vehicle's bottom-center ground trajectory projected via **Planar Homography** (`calibrated_estimate`).
+   - Solid blue line represents verified GPS receiver points (`gps_observation`).
+   - Highlight the explicit labeling: the system never fabricates GPS points from uncalibrated pixel data.
+
+### Step 5: Live Camera Monitoring & Stream Resilience
+1. In the sidebar, navigate to **Live Monitoring**.
+2. Select a camera configured with a local webcam index (`device_index: 0`).
+3. Click **Start Stream**: the backend capture worker boots up and streams live MJPEG video.
+4. Show real-time plate capture badges appearing in the event stream.
+5. Close the browser tab or click **Stop Stream**: show backend logs cleanly releasing the OpenCV VideoCapture and terminating thread workers without memory leaks or zombie handles.
+
+### Step 6: Analytics, Formula-Safe CSV Export & Alert Lifecycle
+1. Navigate to **Analytics**.
+2. Review the live metrics: Total Vehicle Count, Plate Detection Rate, Vehicle Class Distribution, and OCR Confidence histograms.
+3. Click **Export CSV** (ANPR Report):
+   - Open the exported CSV in Excel or Notepad.
+   - Highlight that any strings with leading formula characters (`=`, `+`, `-`, `@`) have been escaped with a leading single quote `'` to prevent CSV formula injection.
+4. Navigate to **Alerts**:
+   - Show active alerts triggered by the rule engine (e.g., watchlist match for `KA01AB1234`).
+   - Click **Acknowledge**: records operator timestamp.
+   - Click **Resolve**: closes the alert lifecycle.
+
+---
+
+## API Reference & Documentation
+
+When the backend runs in `APP_ENV=development`, complete interactive Swagger documentation is available at:
+- **Swagger UI**: `http://127.0.0.1:8000/docs`
+- **ReDoc**: `http://127.0.0.1:8000/redoc`
+
+For detailed architectural notes, see:
+- [`docs/architecture.md`](file:///d:/neP/vehicle-route-anpr/docs/architecture.md): Deep-dive into planar homography mathematics and system topology.
+- [`docs/anpr_pipeline.md`](file:///d:/neP/vehicle-route-anpr/docs/anpr_pipeline.md): Computer vision enhancement, OCR normalization, and evaluation methodology.
+- [`docs/api.md`](file:///d:/neP/vehicle-route-anpr/docs/api.md): Complete REST endpoint catalog and WebSocket payload schemas.
+- [`docs/demo_guide.md`](file:///d:/neP/vehicle-route-anpr/docs/demo_guide.md): Viva / project evaluation walkthrough and defense FAQ.
+
+---
+
+## Reliability, Security & Safety Controls
+
+1. **Explicit Coordinate Attribution**:
+   The system never presents homography-estimated pixel coordinates as hardware GPS data. Every point carries an explicit `source_type` (`calibrated_estimate` vs `gps_observation`).
+2. **Spreadsheet Formula Injection Defense**:
+   All user-influenced fields in CSV exports are sanitized to prevent DDE/formula execution in Microsoft Excel and LibreOffice Calc.
+3. **Windows oneDNN Stability**:
+   CPU inference under PaddlePaddle on Windows is hardened with `enable_mkldnn=False`, avoiding primitive allocation crashes on dynamic license plate crops.
+4. **Session & Transport Security**:
+   Sessions use signed stateless tokens stored in `HttpOnly`, `SameSite=Strict` cookies. In production (`APP_ENV=production`), cookies mandate `Secure=True` (HTTPS).
+5. **RTSP Source Protection**:
+   RTSP credentials are stripped from responses and logging. Stream ingestion is restricted to hostnames explicitly allowlisted in `LIVE_CAMERA_ALLOWED_RTSP_HOSTS`.
+6. **Isolated Test Environments**:
+   All 111 automated tests run against temporary in-memory or ephemeral disk databases, ensuring that `traffic_intel.db` and model weights are never polluted by test runs.

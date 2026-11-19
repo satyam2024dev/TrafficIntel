@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera as CameraIcon, Video, Activity, CheckCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Camera as CameraIcon } from 'lucide-react';
 import { WeatherBadge } from '../components/WeatherBadge';
 import { useTrafficData } from '../hooks/useTrafficData';
 import { CameraLocationManager } from '../components/CameraLocationManager';
@@ -15,17 +15,17 @@ export const Cameras: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <CameraIcon className="w-5 h-5 text-cyan-400" />
+          <h1 className="text-xl font-bold text-white flex items-center gap-2 tracking-tight">
+            <CameraIcon className="w-5 h-5 text-blue-500" />
             <span>Camera Sensor Topology & Telemetry</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Real-time optical sensors across Bangalore Outer Ring Road intelligent highway corridor.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
+        <div className="flex items-center gap-2 text-xs font-mono bg-[#11131A] border border-[#222634] px-3 py-1.5 rounded-lg text-slate-300 shadow-sm">
           <span>Active Nodes:</span>
-          <span className="text-emerald-400 font-bold">{cameras.length} / {cameras.length}</span>
+          <span className="text-emerald-400 font-bold tabular-nums">{cameras.length} / {cameras.length}</span>
         </div>
       </div>
 
@@ -34,12 +34,12 @@ export const Cameras: React.FC = () => {
         {cameras.map((cam) => (
           <div
             key={cam.id}
-            className="glass-panel p-5 rounded-xl border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition"
+            className="glass-panel p-5 rounded-xl border border-[#222634] flex flex-col justify-between hover:border-[#2B3040] transition shadow-sm"
           >
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-lg bg-slate-800/80 border border-slate-700 flex items-center justify-center text-cyan-400 font-mono font-bold text-sm">
+                  <div className="w-10 h-10 rounded-lg bg-[#171A24] border border-[#2B3040] flex items-center justify-center text-blue-400 font-mono font-bold text-sm shadow-sm">
                     {cam.id}
                   </div>
                   <div>
@@ -53,7 +53,7 @@ export const Cameras: React.FC = () => {
                 </span>
               </div>
 
-              <div className="my-3 py-2 px-3 rounded-lg bg-slate-900/80 border border-slate-800/80 space-y-2 text-xs">
+              <div className="my-3 py-2 px-3 rounded-lg bg-[#171A24] border border-[#2B3040] space-y-2 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Road Segment</span>
                   <span className="text-slate-200 text-right truncate max-w-[160px] font-mono text-[11px]">
@@ -62,13 +62,13 @@ export const Cameras: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Coordinates</span>
-                  <span className="text-slate-300 font-mono text-[11px]">
+                  <span className="text-slate-300 font-mono text-[11px] tabular-nums">
                     {cam.latitude.toFixed(4)}, {cam.longitude.toFixed(4)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Sensor Frame Rate</span>
-                  <span className="font-mono text-cyan-400 font-bold">
+                  <span className="font-mono text-blue-400 font-bold tabular-nums">
                     {cam.fps.toFixed(1)} FPS
                   </span>
                 </div>
@@ -79,7 +79,7 @@ export const Cameras: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="pt-2 border-t border-[#222634] flex items-center justify-between text-xs">
               <span className="text-slate-400 text-[11px]">Atmospheric Filter:</span>
               <WeatherBadge condition={cam.weather_condition} />
             </div>

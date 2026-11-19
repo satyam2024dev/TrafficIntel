@@ -1,10 +1,19 @@
 """Live camera lifecycle, source validation, persistence and debounce tests."""
+import os
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
+os.environ.setdefault("PADDLE_USE_MKLDNN", "0")
+
 import asyncio
 import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
 from sqlalchemy import select, func
@@ -13,6 +22,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from backend.app.core.config import settings
 from backend.app.models.models import Base, Camera, LiveDetectionEvent
 from backend.app.services import live_camera_service as live
+from backend.app.api.routes_cameras import live_camera_stream
 
 
 class LiveCameraServiceTests(unittest.TestCase):
@@ -41,6 +51,8 @@ class LiveCameraServiceTests(unittest.TestCase):
 
     def tearDown(self):
         self.session_patch.stop()
+        asyncio.run(live.live_camera_manager.shutdown())
+        live.live_camera_manager.sessions.clear()
         settings.LIVE_CAMERA_ALLOWED_RTSP_HOSTS = self.old_allowlist
         settings.MEDIA_DEMO_MODE = self.old_demo
         settings.LIVE_PROCESSING_FPS = self.old_fps
@@ -207,6 +219,116 @@ class LiveCameraServiceTests(unittest.TestCase):
             self.assertEqual(event.track_id, "7")
             self.assertEqual(event.vehicle_confidence, .91)
             self.assertIsNone(event.ocr_confidence)
+        asyncio.run(run())
+
+    def test_mjpeg_stream_terminates_on_client_disconnect(self):
+        async def run():
+            session = live.CameraSession(camera_id="LIVE1", status="connected", latest_jpeg=b"sample-jpeg-payload")
+            live.live_camera_manager.sessions["LIVE1"] = session
+
+            mock_request = MagicMock()
+            # Return False on first call, True on second call (client disconnected)
+            mock_request.is_disconnected = AsyncMock(side_effect=[False, True])
+
+            async with self.sessions() as db:
+                response = await live_camera_stream("LIVE1", mock_request, db)
+                chunks = []
+                async def read_stream():
+                    async for chunk in response.body_iterator:
+                        chunks.append(chunk)
+                await asyncio.wait_for(read_stream(), timeout=2.0)
+                self.assertEqual(len(chunks), 1)
+                self.assertIn(b"sample-jpeg-payload", chunks[0])
+        asyncio.run(run())
+
+    def test_mjpeg_stream_terminates_on_session_stop(self):
+        async def run():
+            session = live.CameraSession(camera_id="LIVE1", status="connected", latest_jpeg=b"sample-jpeg-payload")
+            live.live_camera_manager.sessions["LIVE1"] = session
+
+            mock_request = MagicMock()
+            mock_request.is_disconnected = AsyncMock(return_value=False)
+
+            async with self.sessions() as db:
+                response = await live_camera_stream("LIVE1", mock_request, db)
+                iterator = response.body_iterator.__aiter__()
+                # Read the first available frame
+                first_chunk = await asyncio.wait_for(iterator.__anext__(), timeout=2.0)
+                self.assertIn(b"sample-jpeg-payload", first_chunk)
+
+                # Now simulate operator stopping the camera session
+                session.status = "stopped"
+                # The generator should detect stopped status and exit promptly
+                with self.assertRaises(StopAsyncIteration):
+                    await asyncio.wait_for(iterator.__anext__(), timeout=2.0)
+        asyncio.run(run())
+
+    def test_stop_clears_latest_frame_and_releases_capture(self):
+        class MockCapture:
+            def __init__(self):
+                self.released = False
+            def release(self):
+                self.released = True
+
+        async def run():
+            manager = live.LiveCameraManager()
+            capture = MockCapture()
+            session = live.CameraSession(
+                camera_id="LIVE1",
+                status="connected",
+                capture=capture,
+                latest_jpeg=b"sample-bytes",
+                active_track_ids={"trk-1", "trk-2"},
+            )
+            manager.sessions["LIVE1"] = session
+            stopped = await asyncio.wait_for(manager.stop("LIVE1"), timeout=3.0)
+            self.assertEqual(stopped["status"], "stopped")
+            self.assertTrue(capture.released)
+            self.assertIsNone(session.latest_jpeg)
+            self.assertEqual(len(session.active_track_ids), 0)
+            self.assertIsNone(manager.latest_frame("LIVE1"))
+        asyncio.run(run())
+
+    def test_max_concurrent_sessions_limit_enforced(self):
+        async def run():
+            async with self.sessions() as db:
+                db.add(Camera(id="CAM_A", name="A", location_name="Loc A", latitude=0, longitude=0,
+                              road_segment="A", status="active", fps=30, weather_condition="clear",
+                              stream_type="webcam", webcam_device_index=0))
+                db.add(Camera(id="CAM_B", name="B", location_name="Loc B", latitude=0, longitude=0,
+                              road_segment="B", status="active", fps=30, weather_condition="clear",
+                              stream_type="webcam", webcam_device_index=1))
+                await db.commit()
+
+            manager = live.LiveCameraManager()
+            old_max = settings.MAX_LIVE_CAMERA_SESSIONS
+            settings.MAX_LIVE_CAMERA_SESSIONS = 1
+            try:
+                entered = asyncio.Event()
+                async def mock_worker(session, _config):
+                    entered.set()
+                    await session.stop_event.wait()
+                manager._run = mock_worker
+
+                # Start first session -> succeeds
+                res_a = await manager.start("CAM_A")
+                self.assertEqual(res_a["status"], "starting")
+                await asyncio.wait_for(entered.wait(), timeout=2.0)
+
+                # Attempt to start second session -> fails due to limit
+                with self.assertRaisesRegex(RuntimeError, "Maximum number of concurrent live camera sessions reached"):
+                    await manager.start("CAM_B")
+
+                # Stop first session -> now second session can start
+                await manager.stop("CAM_A")
+                entered.clear()
+                res_b = await manager.start("CAM_B")
+                self.assertEqual(res_b["status"], "starting")
+                await asyncio.wait_for(entered.wait(), timeout=2.0)
+                await manager.stop("CAM_B")
+            finally:
+                settings.MAX_LIVE_CAMERA_SESSIONS = old_max
+                await manager.shutdown()
         asyncio.run(run())
 
 

@@ -43,6 +43,19 @@ class PlateOCRTests(unittest.TestCase):
         self.assertIn("adaptive_threshold", [variant[0] for variant in variants])
         self.assertIn("gamma_brightening", variants[0][2][0])
 
+    def test_paddle_init_disables_mkldnn_with_fallback(self):
+        passed_kwargs = []
+
+        class FakePaddleOCR:
+            def __init__(self, **kwargs):
+                passed_kwargs.append(kwargs)
+
+        with patch.dict(sys.modules, {"paddleocr": types.SimpleNamespace(PaddleOCR=FakePaddleOCR)}):
+            engine = PaddleOCREngine(allow_demo_fallback=False)
+            self.assertIsNotNone(engine._paddle_ocr)
+            self.assertEqual(len(passed_kwargs), 1)
+            self.assertFalse(passed_kwargs[0].get("enable_mkldnn"))
+
 
 if __name__ == "__main__":
     unittest.main()

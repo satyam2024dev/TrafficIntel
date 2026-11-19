@@ -143,9 +143,9 @@ export const LeafletRouteMap: React.FC<LeafletRouteMapProps> = ({
   }, [center, zoom, cameras, routePoints, activeVehicle]);
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-slate-800 shadow-xl">
+    <div className="relative rounded-xl overflow-hidden border border-[#222634] shadow-sm">
       <div ref={mapContainerRef} style={{ height: height, width: '100%' }} />
-      <div className="absolute top-3 right-3 z-[1000] bg-slate-900/90 border border-slate-700/60 rounded px-2.5 py-1 text-[11px] font-mono text-cyan-400 backdrop-blur-md">
+      <div className="absolute top-3 right-3 z-[1000] bg-[#11131A]/95 border border-[#222634] rounded px-2.5 py-1 text-[11px] font-mono text-blue-400 backdrop-blur-md">
         {routePoints?.length ? 'Persisted route coordinates' : cameras.length ? 'Configured camera locations' : 'No geographic points available'}
       </div>
     </div>

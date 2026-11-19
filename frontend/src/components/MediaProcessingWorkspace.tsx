@@ -232,9 +232,9 @@ export const MediaProcessingWorkspace: React.FC = () => {
         onStart={() => { void startProcessing(); }}
         onReset={resetWorkspace}
       />
-      {(media?.media_type === 'video' || (selectedFile && mediaTypeForFile(selectedFile) === 'video')) && <div className="glass-panel flex flex-wrap items-end gap-3 rounded-xl p-4">
+      {(media?.media_type === 'video' || (selectedFile && mediaTypeForFile(selectedFile) === 'video')) && <div className="glass-panel flex flex-wrap items-end gap-3 rounded-xl border border-[#222634] p-4">
         <label className="min-w-[250px] flex-1 text-xs text-slate-300">Camera used to record this video
-          <select value={routeCameraId} onChange={(event) => setRouteCameraId(event.target.value)} disabled={preparing} className="mt-1 block w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white">
+          <select value={routeCameraId} onChange={(event) => setRouteCameraId(event.target.value)} disabled={preparing} className="mt-1 block w-full rounded-lg border border-[#2B3040] bg-[#171A24] px-3 py-2 text-xs text-white">
             <option value="">No camera selected (GPS import only)</option>
             {cameras.map((camera) => <option key={camera.id} value={camera.id}>{camera.id} · {camera.name}{camera.calibration_homography ? ' · calibrated' : ' · uncalibrated'}</option>)}
           </select>

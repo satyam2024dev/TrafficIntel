@@ -45,6 +45,6 @@ export function getSeverityBadge(severity: string) {
       return { label: 'WARNING', color: 'bg-amber-500/20 text-amber-400 border-amber-500/40' };
     case 'info':
     default:
-      return { label: 'INFO', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' };
+      return { label: 'INFO', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' };
   }
 }

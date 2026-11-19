@@ -117,12 +117,18 @@ async def live_camera_stream(camera_id: str, request: Request, db: AsyncSession 
 
     async def frame_stream():
         last_frame = None
-        while not await request.is_disconnected():
-            frame = live_camera_manager.latest_frame(camera_id)
-            if frame is not None and frame is not last_frame:
-                last_frame = frame
-                yield b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(frame)).encode() + b"\r\n\r\n" + frame + b"\r\n"
-            await asyncio.sleep(0.08)
+        try:
+            while not await request.is_disconnected():
+                status = live_camera_manager.status(camera_id)
+                if status is None or status.get("status") in {"stopped", "failed"}:
+                    break
+                frame = live_camera_manager.latest_frame(camera_id)
+                if frame is not None and frame is not last_frame:
+                    last_frame = frame
+                    yield b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(frame)).encode() + b"\r\n\r\n" + frame + b"\r\n"
+                await asyncio.sleep(0.08)
+        except (asyncio.CancelledError, GeneratorExit):
+            pass
     return StreamingResponse(frame_stream(), media_type="multipart/x-mixed-replace; boundary=frame", headers={"Cache-Control": "no-store"})
 
 

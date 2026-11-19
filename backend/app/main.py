@@ -1,7 +1,16 @@
-﻿"""
+"""
 Real-Time Vehicle Route Tracking & All-Weather ANPR
 Main FastAPI Application Entrypoint
 """
+import os
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
+os.environ.setdefault("PADDLE_USE_MKLDNN", "0")
+
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -182,7 +191,7 @@ async def websocket_traffic_endpoint(websocket: WebSocket):
         await websocket.send_json({
             "type": "CONNECTION_ESTABLISHED",
             "message": "Connected to Real-Time Traffic Intelligence WebSocket",
-            "mode": "DEMO MODE â€” SYNTHETIC DATA",
+            "mode": "DEMO MODE — SYNTHETIC DATA",
             "simulation_status": status
         })
 

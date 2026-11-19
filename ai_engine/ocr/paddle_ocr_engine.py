@@ -1,4 +1,13 @@
 """PaddleOCR adapter with explicit, opt-in synthetic fallback."""
+import os
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("FLAGS_use_mkldnn", "0")
+os.environ.setdefault("PADDLE_USE_MKLDNN", "0")
+
 import logging
 from typing import Optional
 
@@ -23,8 +32,48 @@ class PaddleOCREngine(BaseOCREngine):
 
     def _init_paddle(self):
         try:
+            try:
+                import torch  # Ensure PyTorch runtime DLL directory is active on Windows
+            except ImportError:
+                pass
+            try:
+                import paddle
+                paddle.set_flags({"FLAGS_use_mkldnn": False})
+                import paddle.inference as p_inf
+                if hasattr(p_inf, "Config") and not getattr(p_inf.Config, "_mkldnn_disabled_guard", False):
+                    _orig_config_init = p_inf.Config.__init__
+                    def _safe_config_init(cfg_self, *cfg_args, **cfg_kwargs):
+                        _orig_config_init(cfg_self, *cfg_args, **cfg_kwargs)
+                        if hasattr(cfg_self, "disable_mkldnn"):
+                            cfg_self.disable_mkldnn()
+                        if hasattr(cfg_self, "set_cpu_math_library_num_threads"):
+                            cfg_self.set_cpu_math_library_num_threads(1)
+                    p_inf.Config.__init__ = _safe_config_init
+                    p_inf.Config._mkldnn_disabled_guard = True
+            except Exception:
+                pass
             from paddleocr import PaddleOCR
-            self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang=self.lang, show_log=False)
+            try:
+                self._paddle_ocr = PaddleOCR(
+                    use_angle_cls=False,
+                    lang=self.lang,
+                    show_log=False,
+                    enable_mkldnn=False,
+                    cpu_threads=1,
+                )
+            except TypeError:
+                self._paddle_ocr = PaddleOCR(
+                    use_angle_cls=False,
+                    lang=self.lang,
+                    show_log=False,
+                )
+            for comp_name in ("text_detector", "text_recognizer", "text_classifier"):
+                comp = getattr(self._paddle_ocr, comp_name, None)
+                if comp and hasattr(comp, "config"):
+                    if hasattr(comp.config, "disable_mkldnn"):
+                        comp.config.disable_mkldnn()
+                    if hasattr(comp.config, "set_cpu_math_library_num_threads"):
+                        comp.config.set_cpu_math_library_num_threads(1)
             logger.info("Initialized real PaddleOCR engine.")
         except Exception as exc:
             self.model_error = f"PaddleOCR unavailable: {exc}"
@@ -42,7 +91,7 @@ class PaddleOCREngine(BaseOCREngine):
             return OCRResult("", None, [], "none", weather_condition, "")
 
         try:
-            results = self._paddle_ocr.ocr(plate_image, cls=True)
+            results = self._paddle_ocr.ocr(plate_image, cls=False)
             if not results or not results[0]:
                 if self.allow_demo_fallback:
                     self.provider = "DEMO/SYNTHETIC (empty PaddleOCR result fallback)"

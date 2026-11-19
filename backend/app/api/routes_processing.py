@@ -245,6 +245,29 @@ async def job_vehicle_tracks(job_id: int, db: AsyncSession = Depends(get_db)):
         times = [row.timestamp for row in rows if row.timestamp is not None]
         frames = [row.frame_number for row in rows if row.frame_number is not None]
         first, last = rows[0], rows[-1]
+        track_plates = plate_reads.get(track_id, [])
+        consensus_plate = None
+        if track_plates:
+            totals: dict[str, tuple[int, float, str]] = {}
+            for pr in track_plates:
+                text = pr.get("normalized_ocr_text") or pr.get("raw_ocr_text")
+                if text:
+                    score = float(pr.get("ocr_confidence") or 0.0)
+                    status = pr.get("plate_validation_status") or "invalid_indian_format"
+                    cnt, conf_sum, prev_status = totals.get(text, (0, 0.0, status))
+                    best_status = "valid_indian_format" if (status == "valid_indian_format" or prev_status == "valid_indian_format") else status
+                    totals[text] = (cnt + 1, conf_sum + score, best_status)
+            if totals:
+                consensus_text, (obs_cnt, conf_sum, final_status) = max(
+                    totals.items(), key=lambda item: (item[1][0], item[1][1])
+                )
+                consensus_plate = {
+                    "plate_text": consensus_text,
+                    "validated_registration_number": consensus_text if final_status == "valid_indian_format" else None,
+                    "plate_validation_status": final_status,
+                    "observation_count": obs_cnt,
+                    "mean_ocr_confidence": round(conf_sum / obs_cnt, 3) if obs_cnt else 0.0,
+                }
         tracks.append({
             "track_id": track_id,
             "vehicle_class": Counter(row.object_type for row in rows).most_common(1)[0][0],
@@ -260,8 +283,9 @@ async def job_vehicle_tracks(job_id: int, db: AsyncSession = Depends(get_db)):
                 "x": _track_point(last)["center_x"],
                 "y": _track_point(last)["center_y"],
             },
-            "plate_read_count": len(plate_reads.get(track_id, [])),
-            "plate_reads": plate_reads.get(track_id, []),
+            "consensus_plate": consensus_plate,
+            "plate_read_count": len(track_plates),
+            "plate_reads": track_plates,
         })
     return {
         "job_id": job_id,
@@ -322,6 +346,29 @@ async def job_track_trajectory(job_id: int, track_id: str, db: AsyncSession = De
         .order_by(MediaPlateResult.timestamp, MediaPlateResult.frame_number, MediaPlateResult.id)
     )).scalars().all()
     plates_by_detection: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    consensus_text = None
+    consensus_plate = None
+    if plate_rows:
+        totals: dict[str, tuple[int, float, str]] = {}
+        for plate in plate_rows:
+            text = plate.normalized_ocr_text or plate.raw_ocr_text
+            if text:
+                score = float(plate.ocr_confidence or 0.0)
+                status = plate.plate_validation_status or "invalid_indian_format"
+                cnt, conf_sum, prev_status = totals.get(text, (0, 0.0, status))
+                best_status = "valid_indian_format" if (status == "valid_indian_format" or prev_status == "valid_indian_format") else status
+                totals[text] = (cnt + 1, conf_sum + score, best_status)
+        if totals:
+            consensus_text, (obs_cnt, conf_sum, final_status) = max(
+                totals.items(), key=lambda item: (item[1][0], item[1][1])
+            )
+            consensus_plate = {
+                "plate_text": consensus_text,
+                "validated_registration_number": consensus_text if final_status == "valid_indian_format" else None,
+                "plate_validation_status": final_status,
+                "observation_count": obs_cnt,
+                "mean_ocr_confidence": round(conf_sum / obs_cnt, 3) if obs_cnt else 0.0,
+            }
     for plate in plate_rows:
         plates_by_detection[plate.detection_id].append({
             "plate_result_id": plate.id,
@@ -337,6 +384,7 @@ async def job_track_trajectory(job_id: int, track_id: str, db: AsyncSession = De
     for detection in detections:
         point = _track_point(detection)
         point["plate_reads"] = plates_by_detection.get(detection.id, [])
+        point["consensus_plate_text"] = consensus_text
         points.append(point)
     times = [point["timestamp"] for point in points if point["timestamp"] is not None]
     return {
@@ -346,6 +394,7 @@ async def job_track_trajectory(job_id: int, track_id: str, db: AsyncSession = De
         "duration_seconds": max(times) - min(times) if times else 0.0,
         "frame_count": len({point["frame_number"] for point in points if point["frame_number"] is not None}),
         "coordinate_space": "source-video pixels; not geographic coordinates",
+        "consensus_plate": consensus_plate,
         "points": points,
     }
 

@@ -4,12 +4,107 @@ import { api } from '../services/api';
 import type { ANPRSearchPage } from '../types';
 
 export const Vehicles: React.FC = () => {
-  const [registration,setRegistration]=useState(''); const [results,setResults]=useState<ANPRSearchPage|null>(null); const [error,setError]=useState(''); const [loading,setLoading]=useState(false);
-  const search=async(e:React.FormEvent)=>{e.preventDefault();setLoading(true);setError('');try{setResults(await api.searchANPRHistory({registration:registration.trim(),limit:100,offset:0}));}catch(err:any){setResults(null);setError(err?.response?.data?.detail??'Could not search persisted ANPR history.');}finally{setLoading(false);}};
-  return <div className="space-y-5"><header><h1 className="flex items-center gap-2 text-xl font-bold text-white"><Car className="text-cyan-400"/>Vehicle history search</h1><p className="mt-1 text-xs text-slate-400">Search validated Indian registration numbers in persisted media and live-camera detections. Matching records do not prove cross-camera physical identity.</p></header>
-    <form onSubmit={search} className="glass-panel flex flex-wrap items-end gap-3 rounded-xl border border-slate-800 p-4"><label className="min-w-64 flex-1 text-xs text-slate-400">Indian vehicle registration<input required maxLength={32} value={registration} onChange={e=>setRegistration(e.target.value)} placeholder="KA01AB1234" className="mt-1 block w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono text-white"/></label><button disabled={loading} className="inline-flex items-center gap-2 rounded bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950"><Search size={15}/>{loading?'Searching…':'Search history'}</button></form>
-    {error&&<p role="alert" className="rounded border border-rose-800 p-3 text-sm text-rose-200">{error}</p>}
-    {results&&<><p className="text-xs text-slate-400">{results.total.toLocaleString()} matching persisted observations for <span className="font-mono text-cyan-300">{results.registration}</span>. Track IDs are local to their media job or camera.</p>{results.items.length===0?<div className="rounded-xl border border-slate-800 p-8 text-center text-sm text-slate-500">No matching real inference records were found.</div>:<div className="space-y-3">{results.items.map(item=><article key={`${item.source}-${item.record_id}`} className="glass-panel rounded-xl border border-slate-800 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 font-mono text-lg font-bold text-emerald-300"><ScanLine size={16}/>{item.validated_registration_number??'Not validated'}</h2><p className="mt-1 text-xs text-slate-400">{new Date(item.timestamp).toLocaleString()} · {item.source==='live_camera'?'Live camera':'Uploaded media'} · {item.camera_name??item.camera_id??'No camera'} · {item.vehicle_class??'Vehicle class unavailable'}</p><p className="mt-1 text-xs text-slate-500">Tracking ID: {item.track_id??'not assigned'} · Raw OCR: <span className="font-mono">{item.raw_ocr_text??'—'}</span> · Normalized: <span className="font-mono">{item.normalized_ocr_text??'—'}</span></p><p className="mt-1 text-xs text-slate-500">OCR confidence: {item.ocr_confidence==null?'—':`${(item.ocr_confidence*100).toFixed(1)}%`} · Plate detector confidence: {item.plate_confidence==null?'Not available':`${(item.plate_confidence*100).toFixed(1)}%`}</p></div><div className="flex gap-3 text-xs">{item.original_url&&<a className="text-cyan-300" href={item.original_url} target="_blank" rel="noreferrer">Original image</a>}{item.plate_crop_url&&<a className="text-cyan-300" href={item.plate_crop_url} target="_blank" rel="noreferrer">Plate crop</a>}{item.route_history_url&&<a className="text-cyan-300" href={item.route_history_url}>Route history</a>}</div></div></article>)}</div>}</>}
-    {!results&&!error&&<div className="rounded-xl border border-slate-800 p-8 text-center text-sm text-slate-500">Enter a registration number to search persisted ANPR history.</div>}
-  </div>;
+  const [registration, setRegistration] = useState('');
+  const [results, setResults] = useState<ANPRSearchPage | null>(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const search = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      setResults(await api.searchANPRHistory({ registration: registration.trim(), limit: 100, offset: 0 }));
+    } catch (err: any) {
+      setResults(null);
+      setError(err?.response?.data?.detail ?? 'Could not search persisted ANPR history.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="flex items-center gap-2 text-xl font-bold text-white tracking-tight">
+          <Car className="text-blue-500" />
+          <span>Vehicle history search</span>
+        </h1>
+        <p className="mt-1 text-xs text-slate-400">
+          Search validated Indian registration numbers in persisted media and live-camera detections. Matching records do not prove cross-camera physical identity.
+        </p>
+      </header>
+
+      <form onSubmit={search} className="glass-panel flex flex-wrap items-end gap-3 rounded-xl border border-[#222634] p-4 shadow-sm">
+        <label className="min-w-64 flex-1 text-xs text-slate-400">
+          Indian vehicle registration
+          <input
+            required
+            maxLength={32}
+            value={registration}
+            onChange={(e) => setRegistration(e.target.value)}
+            placeholder="KA01AB1234"
+            className="mt-1 block w-full rounded-lg border border-[#2B3040] bg-[#171A24] p-2.5 font-mono text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </label>
+        <button
+          disabled={loading}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50"
+        >
+          <Search size={15} />
+          {loading ? 'Searching…' : 'Search history'}
+        </button>
+      </form>
+
+      {error && <p role="alert" className="rounded-lg border border-rose-800 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</p>}
+
+      {results && (
+        <>
+          <p className="text-xs text-slate-400">
+            {results.total.toLocaleString()} matching persisted observations for <span className="font-mono font-bold text-blue-400">{results.registration}</span>. Track IDs are local to their media job or camera.
+          </p>
+          {results.items.length === 0 ? (
+            <div className="rounded-xl border border-[#222634] bg-[#11131A] p-8 text-center text-sm text-slate-500 shadow-sm">
+              No matching real inference records were found.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {results.items.map((item) => (
+                <article key={`${item.source}-${item.record_id}`} className="glass-panel rounded-xl border border-[#222634] p-4 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="flex items-center gap-2 font-mono text-lg font-bold text-emerald-400">
+                        <ScanLine size={16} />
+                        {item.validated_registration_number ?? 'Not validated'}
+                      </h2>
+                      <p className="mt-1 text-xs text-slate-400">
+                        {new Date(item.timestamp).toLocaleString()} · {item.source === 'live_camera' ? 'Live camera' : 'Uploaded media'} · {item.camera_name ?? item.camera_id ?? 'No camera'} · {item.vehicle_class ?? 'Vehicle class unavailable'}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Tracking ID: {item.track_id ?? 'not assigned'} · Raw OCR: <span className="font-mono text-slate-300">{item.raw_ocr_text ?? '—'}</span> · Normalized: <span className="font-mono text-slate-300">{item.normalized_ocr_text ?? '—'}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-slate-400 tabular-nums">
+                        OCR confidence: {item.ocr_confidence == null ? '—' : `${(item.ocr_confidence * 100).toFixed(1)}%`} · Plate detector confidence: {item.plate_confidence == null ? 'Not available' : `${(item.plate_confidence * 100).toFixed(1)}%`}
+                      </p>
+                    </div>
+                    <div className="flex gap-3 text-xs font-medium">
+                      {item.original_url && <a className="text-blue-400 hover:text-blue-300 transition" href={item.original_url} target="_blank" rel="noreferrer">Original image</a>}
+                      {item.plate_crop_url && <a className="text-blue-400 hover:text-blue-300 transition" href={item.plate_crop_url} target="_blank" rel="noreferrer">Plate crop</a>}
+                      {item.route_history_url && <a className="text-blue-400 hover:text-blue-300 transition" href={item.route_history_url}>Route history</a>}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {!results && !error && (
+        <div className="rounded-xl border border-[#222634] bg-[#11131A] p-8 text-center text-sm text-slate-500 shadow-sm">
+          Enter a registration number to search persisted ANPR history.
+        </div>
+      )}
+    </div>
+  );
 };

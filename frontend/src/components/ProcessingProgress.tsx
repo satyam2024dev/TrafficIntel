@@ -37,28 +37,28 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({ job, upl
   const unavailable = (rawError ?? '').toLowerCase().includes('unavailable');
 
   return (
-    <section aria-live="polite" aria-labelledby="processing-status-heading" className="glass-panel rounded-xl p-4">
+    <section aria-live="polite" aria-labelledby="processing-status-heading" className="glass-panel rounded-xl border border-[#222634] p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          {status === 'completed' ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : status === 'failed' || error ? <AlertTriangle className="h-5 w-5 text-rose-400" /> : uploading ? <UploadCloud className="h-5 w-5 text-cyan-400" /> : <LoaderCircle className="h-5 w-5 animate-spin text-cyan-400" />}
+          {status === 'completed' ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : status === 'failed' || error ? <AlertTriangle className="h-5 w-5 text-rose-400" /> : uploading ? <UploadCloud className="h-5 w-5 text-blue-500" /> : <LoaderCircle className="h-5 w-5 animate-spin text-blue-500" />}
           <div>
             <h3 id="processing-status-heading" className="text-sm font-bold text-white">{unavailable ? 'REAL AI MODEL UNAVAILABLE' : 'Processing status'}</h3>
             <p className="mt-0.5 text-xs text-slate-400">{status ? `${status.toUpperCase()} · ${stage}` : errorMessage ?? 'Processing service is unavailable'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
-          {elapsed !== null && <span>Elapsed {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}</span>}
-          <span className="font-bold text-cyan-300">{Math.round(percent)}%</span>
+          {elapsed !== null && <span className="tabular-nums">Elapsed {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}</span>}
+          <span className="font-bold text-blue-400 tabular-nums">{Math.round(percent)}%</span>
         </div>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800" role="progressbar" aria-valuenow={Math.round(percent)} aria-valuemin={0} aria-valuemax={100} aria-label="Media processing progress">
-        <div className={`h-full transition-all duration-500 ${status === 'failed' || error ? 'bg-rose-500' : status === 'completed' ? 'bg-emerald-400' : 'bg-cyan-400'}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#171A24]" role="progressbar" aria-valuenow={Math.round(percent)} aria-valuemin={0} aria-valuemax={100} aria-label="Media processing progress">
+        <div className={`h-full transition-all duration-500 ${status === 'failed' || error ? 'bg-rose-500' : status === 'completed' ? 'bg-emerald-400' : 'bg-blue-600'}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
       </div>
       <div className="mt-3 hidden grid-cols-2 gap-x-2 gap-y-1 sm:grid sm:grid-cols-4 lg:grid-cols-6">
         {WORKFLOW_STAGES.map((item, index) => {
           const complete = status === 'completed' || (activeIndex >= 0 && index < activeIndex);
           const active = status !== 'failed' && index === activeIndex;
-          return <span key={item} className={`text-[9px] font-mono ${complete ? 'text-emerald-300' : active ? 'text-cyan-300' : 'text-slate-600'}`}>{complete ? '✓ ' : active ? '› ' : '· '}{item}</span>;
+          return <span key={item} className={`text-[9px] font-mono ${complete ? 'text-emerald-400' : active ? 'text-blue-400 font-bold' : 'text-slate-600'}`}>{complete ? '✓ ' : active ? '› ' : '· '}{item}</span>;
         })}
       </div>
       {errorMessage && (

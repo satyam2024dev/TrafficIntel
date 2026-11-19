@@ -12,10 +12,11 @@ from ai_engine.detection.synthetic_detector import SyntheticVehicleDetector
 logger = logging.getLogger(__name__)
 
 class YOLODetector(BaseVehicleDetector):
-    def __init__(self, model_path: str = "yolov8n.pt", conf_threshold: float = 0.5, allow_demo_fallback: bool = True):
+    def __init__(self, model_path: str = "yolov8n.pt", conf_threshold: float = 0.5, allow_demo_fallback: bool = True, image_size: int = 640):
         self.model_path = model_path
         self.conf_threshold = conf_threshold
         self.allow_demo_fallback = allow_demo_fallback
+        self.image_size = int(image_size) if image_size else 640
         self.model = None
         self.model_error = None
         self.provider = "REAL YOLO"
@@ -49,7 +50,10 @@ class YOLODetector(BaseVehicleDetector):
             return self._fallback_detector.detect(frame, camera_id)
 
         try:
-            results = self.model(frame, conf=self.conf_threshold, verbose=False)
+            try:
+                results = self.model(frame, conf=self.conf_threshold, imgsz=self.image_size, verbose=False)
+            except TypeError:
+                results = self.model(frame, conf=self.conf_threshold, verbose=False)
             detections: List[VehicleDetection] = []
             
             # Map COCO classes: 2: car, 3: motorcycle, 5: bus, 7: truck

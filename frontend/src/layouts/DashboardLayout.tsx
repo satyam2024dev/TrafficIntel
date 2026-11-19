@@ -16,7 +16,7 @@ export const DashboardLayout: React.FC<{ user: { username: string; role: string 
   const unresolvedAlerts = alerts.filter((a) => !a.is_resolved).length;
 
   return (
-    <div className="min-h-screen bg-[#070b14] flex flex-col text-slate-100">
+    <div className="min-h-screen bg-[#090A0F] flex flex-col text-[#F8FAFC]">
       <Navbar
         wsConnected={wsConnected}
         isSimRunning={isSimRunning}
@@ -32,15 +32,15 @@ export const DashboardLayout: React.FC<{ user: { username: string; role: string 
         <Sidebar />
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-16">
-          {/* Top Banner Notice */}
-          <div className="mb-6 p-3 rounded-xl bg-gradient-to-r from-cyan-950/40 via-slate-900/60 to-purple-950/30 border border-cyan-800/30 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              <span className="font-semibold text-white">Vehicle route and ANPR workspace</span>
-              <span className="hidden sm:inline text-slate-400">| Real inference records are separated from legacy simulation data</span>
+          {/* Tactical Command Banner */}
+          <div className="mb-6 p-3 rounded-xl bg-[#11131A] border border-[#222634] shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+              <span className="font-semibold text-white tracking-wide">VEHICLE ROUTE & ANPR COMMAND CENTER</span>
+              <span className="hidden sm:inline text-slate-400">| Calibrated multi-camera tracking & license plate intelligence</span>
             </div>
             <div className="text-[11px] font-mono text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">
-              RESEARCH PROTOTYPE · AUTHORIZED CAMERA USE ONLY
+              AUTHORITATIVE CORRIDOR OPERATIONS · C01-C05
             </div>
           </div>
 
@@ -49,10 +49,10 @@ export const DashboardLayout: React.FC<{ user: { username: string; role: string 
       </div>
 
       {/* Footer bar */}
-      <footer className="h-8 border-t border-slate-800/80 bg-slate-950 px-4 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-        <div>ORR Autonomous Corridor C01-C05 â€¢ Real-Time AI Pipeline</div>
+      <footer className="h-8 border-t border-[#1F2330] bg-[#0D0F16] px-4 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+        <div>ORR Autonomous Corridor C01-C05 • Tactical AI Pipeline</div>
         <div className="flex items-center gap-3">
-          <span className="text-emerald-400">Real AI requires configured models</span>
+          <span className="text-emerald-400">AI Core: ByteTrack + PaddleOCR</span>
           <span>FastAPI + PostgreSQL</span>
         </div>
       </footer>

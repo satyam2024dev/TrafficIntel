@@ -1,4 +1,4 @@
-﻿"""
+"""
 Traffic Intelligence Query & Business Logic Service
 """
 from datetime import datetime, timezone, timedelta
@@ -158,8 +158,11 @@ class TrafficService:
         res = await session.execute(query)
         alert = res.scalar_one_or_none()
         if alert:
+            now = datetime.now(timezone.utc)
             alert.is_resolved = True
-            alert.resolved_at = datetime.now(timezone.utc)
+            alert.resolved_at = now
+            if alert.acknowledged_at is None:
+                alert.acknowledged_at = now
             await session.commit()
             await session.refresh(alert)
         return alert

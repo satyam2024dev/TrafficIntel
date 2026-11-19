@@ -77,7 +77,8 @@ def _csv_value(value):
     if value is None:
         return ""
     text = str(value)
-    if text.startswith(("=", "+", "-", "@", "\t", "\r")):
+    stripped = text.lstrip()
+    if stripped.startswith(("=", "+", "-", "@", "\t", "\r", "%")):
         return "'" + text
     return text
 

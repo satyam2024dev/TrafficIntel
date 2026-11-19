@@ -27,9 +27,9 @@ export const ProcessingResults: React.FC<ProcessingResultsProps> = ({ results, s
 
   return (
     <section className="space-y-4" aria-labelledby="processing-results-heading">
-      <div className="glass-panel rounded-xl p-4">
+      <div className="glass-panel rounded-xl border border-[#222634] p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-[10px] font-mono uppercase tracking-[0.18em] text-cyan-400">Analysis output</p><h3 id="processing-results-heading" className="mt-1 text-base font-bold text-white">Processing results</h3></div>
+          <div><p className="text-[10px] font-mono uppercase tracking-[0.18em] text-blue-500">Analysis output</p><h3 id="processing-results-heading" className="mt-1 text-base font-bold text-white">Processing results</h3></div>
           <div className="flex flex-wrap gap-2">
             {modes.map((mode) => <span key={mode} className={`rounded-md border px-2.5 py-1 text-[10px] font-bold tracking-wider ${mode === 'REAL' ? 'border-emerald-800 bg-emerald-950/50 text-emerald-300' : mode === 'DEMO' ? 'border-amber-800 bg-amber-950/50 text-amber-300' : 'border-violet-800 bg-violet-950/50 text-violet-300'}`}>{modeLabel(mode)}</span>)}
           </div>
@@ -42,27 +42,27 @@ export const ProcessingResults: React.FC<ProcessingResultsProps> = ({ results, s
           <SummaryTile icon={<Target className="h-4 w-4" />} label="Avg confidence" value={summary.averageConfidence === null ? '—' : confidenceText(summary.averageConfidence)} />
           <SummaryTile icon={<CloudSun className="h-4 w-4" />} label="Condition" value={weather} />
         </div>
-        {(operations.length > 0 || Boolean(metadata.plate_detector)) && <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span className="font-semibold text-slate-300">Enhancement:</span>{operations.length ? operations.map((operation) => <span key={operation} className="rounded bg-slate-800 px-2 py-1">{operation}</span>) : <span>None reported</span>}{Boolean(metadata.plate_detector) && <span className="rounded border border-violet-900 bg-violet-950/30 px-2 py-1">Plate localization: {String(metadata.plate_detector)}</span>}</div>}
+        {(operations.length > 0 || Boolean(metadata.plate_detector)) && <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-slate-400"><span className="font-semibold text-slate-300">Enhancement:</span>{operations.length ? operations.map((operation) => <span key={operation} className="rounded bg-[#171A24] border border-[#2B3040] px-2 py-1">{operation}</span>) : <span>None reported</span>}{Boolean(metadata.plate_detector) && <span className="rounded border border-violet-900 bg-violet-950/30 px-2 py-1">Plate localization: {String(metadata.plate_detector)}</span>}</div>}
       </div>
 
       {String(metadata.plate_detector ?? '').toUpperCase().includes('HEURISTIC') && <p className="rounded-lg border border-violet-900/60 bg-violet-950/20 p-3 text-xs text-violet-200">HEURISTIC plate localization uses a geometric region inside each vehicle box; it is not a trained plate detector and does not provide plate confidence. Configure <code>PLATE_MODEL_PATH</code> with compatible Ultralytics plate weights to use a real plate detector.</p>}
       {plateDetectorError && <p role="alert" className="rounded-lg border border-rose-900/60 bg-rose-950/30 p-3 text-xs text-rose-200">{plateDetectorError}</p>}
 
-      {results.detections.length === 0 && <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-xs text-slate-400">No vehicles were detected in the processed media.</div>}
-      {results.plate_results.length === 0 && <div role="status" className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-xs text-slate-400">{plateDetectorError ? 'Plate detection did not run because its real model is unavailable; vehicle results are preserved above.' : ocrUnavailable ? 'OCR unavailable. No plate reads were produced.' : results.detections.length ? 'No license plates were detected inside the vehicle boxes.' : 'No plate results are available.'}</div>}
-      {results.plate_results.length > 0 && readablePlateCount === 0 && <div role="status" className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-xs text-slate-400">{ocrUnavailable ? 'Plate detections were saved, but OCR is unavailable.' : 'Plate detections were saved, but OCR did not return readable text.'}</div>}
+      {results.detections.length === 0 && <div className="rounded-xl border border-[#222634] bg-[#11131A] p-4 text-xs text-slate-400">No vehicles were detected in the processed media.</div>}
+      {results.plate_results.length === 0 && <div role="status" className="rounded-xl border border-[#222634] bg-[#11131A] p-4 text-xs text-slate-400">{plateDetectorError ? 'Plate detection did not run because its real model is unavailable; vehicle results are preserved above.' : ocrUnavailable ? 'OCR unavailable. No plate reads were produced.' : results.detections.length ? 'No license plates were detected inside the vehicle boxes.' : 'No plate results are available.'}</div>}
+      {results.plate_results.length > 0 && readablePlateCount === 0 && <div role="status" className="rounded-xl border border-[#222634] bg-[#11131A] p-4 text-xs text-slate-400">{ocrUnavailable ? 'Plate detections were saved, but OCR is unavailable.' : 'Plate detections were saved, but OCR did not return readable text.'}</div>}
 
       {results.plate_results.length > 0 && <div className="grid gap-3 lg:grid-cols-2">{results.plate_results.map((plate) => <PlateResultCard key={plate.id} plate={plate} detection={detectionForPlate(plate)} metadata={metadata} selected={plate.id === selectedPlateId} onSelect={() => onPlateSelect(plate.id)} />)}</div>}
 
       {results.detections.length > 0 && (
-        <div className="glass-panel overflow-hidden rounded-xl">
-          <div className="border-b border-slate-800 px-4 py-3"><h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Detection details</h4></div>
+        <div className="glass-panel overflow-hidden rounded-xl border border-[#222634]">
+          <div className="border-b border-[#222634] px-4 py-3"><h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Detection details</h4></div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-[11px]">
-              <thead className="bg-slate-950/70 text-[9px] uppercase tracking-wider text-slate-500"><tr><th className="px-3 py-2">Frame</th><th className="px-3 py-2">Time</th><th className="px-3 py-2">Track</th><th className="px-3 py-2">Vehicle</th><th className="px-3 py-2">Vehicle confidence</th><th className="px-3 py-2">Plate / OCR</th></tr></thead>
-              <tbody className="divide-y divide-slate-800/70">{results.detections.map((detection: MediaDetection) => {
+              <thead className="bg-[#171A24] text-[9px] uppercase tracking-wider text-slate-400"><tr><th className="px-3 py-2">Frame</th><th className="px-3 py-2">Time</th><th className="px-3 py-2">Track</th><th className="px-3 py-2">Vehicle</th><th className="px-3 py-2">Vehicle confidence</th><th className="px-3 py-2">Plate / OCR</th></tr></thead>
+              <tbody className="divide-y divide-[#222634]">{results.detections.map((detection: MediaDetection) => {
                 const plate = plateByDetection.get(detection.id);
-                return <tr key={detection.id} className="text-slate-300"><td className="px-3 py-2">{detection.frame_number ?? 'Image'}</td><td className="px-3 py-2">{detection.timestamp === null ? '—' : `${detection.timestamp.toFixed(2)}s`}</td><td className="px-3 py-2 font-mono">{detection.track_id ?? '—'}</td><td className="px-3 py-2">{detection.object_type}</td><td className="px-3 py-2">{confidenceText(detection.confidence)}</td><td className="px-3 py-2">{plate ? <button type="button" onClick={() => onPlateSelect(plate.id)} className="font-mono text-cyan-300 hover:text-cyan-100">{plate.normalized_ocr_text || plate.plate_text || 'Plate detected · no OCR read'} · {confidenceText(plate.ocr_confidence)}</button> : 'No plate detected'}</td></tr>;
+                return <tr key={detection.id} className="text-slate-300"><td className="px-3 py-2">{detection.frame_number ?? 'Image'}</td><td className="px-3 py-2 tabular-nums">{detection.timestamp === null ? '—' : `${detection.timestamp.toFixed(2)}s`}</td><td className="px-3 py-2 font-mono tabular-nums">{detection.track_id ?? '—'}</td><td className="px-3 py-2">{detection.object_type}</td><td className="px-3 py-2 tabular-nums">{confidenceText(detection.confidence)}</td><td className="px-3 py-2">{plate ? <button type="button" onClick={() => onPlateSelect(plate.id)} className="font-mono text-blue-400 hover:text-blue-300">{plate.normalized_ocr_text || plate.plate_text || 'Plate detected · no OCR read'} · {confidenceText(plate.ocr_confidence)}</button> : 'No plate detected'}</td></tr>;
               })}</tbody>
             </table>
           </div>
@@ -73,5 +73,5 @@ export const ProcessingResults: React.FC<ProcessingResultsProps> = ({ results, s
 };
 
 const SummaryTile: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => (
-  <div className="rounded-lg border border-slate-800 bg-slate-950/55 p-3"><div className="flex items-center gap-1.5 text-cyan-400">{icon}<span className="text-[9px] uppercase tracking-wider text-slate-500">{label}</span></div><p className="mt-2 truncate text-sm font-bold text-white">{value}</p></div>
+  <div className="rounded-lg border border-[#222634] bg-[#11131A] p-3"><div className="flex items-center gap-1.5 text-blue-500">{icon}<span className="text-[9px] uppercase tracking-wider text-slate-400">{label}</span></div><p className="mt-2 truncate text-sm font-bold text-white tabular-nums">{value}</p></div>
 );

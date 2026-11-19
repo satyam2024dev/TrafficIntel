@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     MEDIA_DEMO_MODE: bool = False
     YOLO_MODEL_PATH: str = "models/yolov8n.pt"
     PLATE_MODEL_PATH: str = "models/license_plate_detector.pt"
-    PROCESS_EVERY_N_FRAMES: int = 3
+    PROCESS_EVERY_N_FRAMES: int = 5
+    YOLO_IMAGE_SIZE: int = 640
+    MAX_PROCESSING_WIDTH: int = 1280
     TRACKER_LOST_TRACK_BUFFER: int = 30
     TRACKER_MINIMUM_CONSECUTIVE_FRAMES: int = 2
     TRACKER_MINIMUM_IOU_THRESHOLD: float = 0.1

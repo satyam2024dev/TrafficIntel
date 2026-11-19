@@ -191,6 +191,54 @@ class MediaPipelineTests(unittest.TestCase):
         self.assertEqual(len(batch["plates"]), 2)
         self.assertEqual([plate["detection_index"] for plate in batch["plates"]], [0, 1])
 
+    def test_multi_vehicle_tracking_keeps_distinct_track_ids_and_consensus_plates(self):
+        vehicle_provider = types.SimpleNamespace(
+            model=object(), model_error=None, provider="REAL YOLO",
+            detect=lambda _frame: [
+                VehicleDetection((10, 10, 80, 80), 0.92, "car", "Unknown", 2),
+                VehicleDetection((120, 10, 80, 80), 0.90, "truck", "Unknown", 7),
+            ],
+        )
+
+        tracker = types.SimpleNamespace(
+            provider="REAL ByteTrack",
+            update=lambda detections, _cam, _frame, **_kwargs: [
+                TrackedVehicle("track-101", "MEDIA", detections[0].bbox, 0.92, "car", "Unknown"),
+                TrackedVehicle("track-202", "MEDIA", detections[1].bbox, 0.90, "truck", "Unknown"),
+            ],
+        )
+
+        class MultiPlateDetector:
+            mode = "REAL YOLO PLATE DETECTOR"
+
+            def detect_plates(self, frame, vehicle_bbox, track_id):
+                vx, vy, _vw, _vh = vehicle_bbox
+                crop = frame[int(vy + 20):int(vy + 35), int(vx + 10):int(vx + 40)].copy()
+                return [DetectedPlate((vx + 10, vy + 20, 30, 15), 0.88, crop, track_id)]
+
+        class DistinctOCREngine:
+            provider = "PaddleOCR"
+            _paddle_ocr = object()
+            model_error = None
+
+            def recognize_plate(self, crop, weather):
+                return OCRResult("KA 01 AB 1234", 0.95, [], "none", weather, "KA 01 AB 1234")
+
+        with patch.object(pipeline_module, "YOLODetector", return_value=vehicle_provider), \
+             patch.object(pipeline_module, "PaddleOCREngine", return_value=DistinctOCREngine()), \
+             patch.object(pipeline_module, "ByteTrackTracker", return_value=tracker):
+            pipeline = pipeline_module.MediaPipeline(demo_mode=True)
+            pipeline.tracker = tracker
+            pipeline.plate_detector = MultiPlateDetector()
+            batch = pipeline._process_frame(np.full((100, 220, 3), 120, dtype=np.uint8), 1, 0.0, track=True)
+
+        self.assertEqual(len(batch["detections"]), 2)
+        self.assertEqual(batch["detections"][0]["track_id"], "track-101")
+        self.assertEqual(batch["detections"][1]["track_id"], "track-202")
+        self.assertEqual(len(batch["plates"]), 2)
+        self.assertEqual(batch["plates"][0]["vehicle_track_id"], "track-101")
+        self.assertEqual(batch["plates"][1]["vehicle_track_id"], "track-202")
+
     def test_heuristic_and_real_plate_provider_are_named_honestly(self):
         heuristic = HeuristicPlateDetector(mode="HEURISTIC")
         plate = heuristic.detect_plate(np.zeros((100, 100, 3), dtype=np.uint8), (10, 10, 80, 80))
